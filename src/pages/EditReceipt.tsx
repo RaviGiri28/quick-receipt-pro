@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { getReceiptById, saveReceipt, getSettings } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +39,8 @@ export default function EditReceipt() {
     showName: user?.business?.showName ?? settings.showName,
     showWatermark: user?.business?.showWatermark ?? settings.showWatermark,
     primaryColor: user?.business?.primaryColor || settings.primaryColor,
+    address: user?.business?.address || '',
+    phone: user?.business?.phone || '',
   };
 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -75,7 +80,7 @@ export default function EditReceipt() {
   return (
     <div className="animate-fade-in-up">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/history')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
         <h1 className="text-2xl font-bold">Edit Receipt #{receipt.serialNumber}</h1>
@@ -97,6 +102,19 @@ export default function EditReceipt() {
                   />
                 </div>
               ))}
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={receipt.status}
+                  onValueChange={(v: 'success' | 'pending') => setReceipt(prev => prev ? { ...prev, status: v } : prev)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="success">✅ Success</SelectItem>
+                    <SelectItem value="pending">⏳ Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex gap-3 pt-4">
               <Button onClick={handleSave} className="gap-2">

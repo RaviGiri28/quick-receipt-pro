@@ -2,7 +2,7 @@ import { ReceiptData, AppSettings } from '@/types/receipt';
 
 const RECEIPTS_KEY = 'qr_receipts';
 const SETTINGS_KEY = 'qr_settings';
-const SERIALS_KEY = 'qr_serials';
+const SERIALS_KEY = 'qr_serial_global';
 
 export function getReceipts(): ReceiptData[] {
   try {
@@ -32,12 +32,11 @@ export function deleteReceipt(id: string): void {
   localStorage.setItem(RECEIPTS_KEY, JSON.stringify(receipts));
 }
 
-export function getNextSerial(accountNumber: string): number {
-  const serials = JSON.parse(localStorage.getItem(SERIALS_KEY) || '{}');
-  const current = serials[accountNumber] || 0;
-  serials[accountNumber] = current + 1;
-  localStorage.setItem(SERIALS_KEY, JSON.stringify(serials));
-  return current + 1;
+export function getNextSerial(): number {
+  const current = parseInt(localStorage.getItem(SERIALS_KEY) || '0', 10);
+  const next = current + 1;
+  localStorage.setItem(SERIALS_KEY, String(next));
+  return next;
 }
 
 export function getSettings(): AppSettings {
@@ -51,6 +50,7 @@ export function getSettings(): AppSettings {
     showName: true,
     showWatermark: true,
     primaryColor: '217 91% 30%',
+    customFields: [],
   };
 }
 
@@ -64,5 +64,6 @@ export function getStats() {
   const todayReceipts = receipts.filter(r => new Date(r.createdAt).toDateString() === today);
   const totalAmount = receipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
   const accounts = new Set(receipts.map(r => r.accountNumber).filter(Boolean)).size;
-  return { total: receipts.length, today: todayReceipts.length, totalAmount, accounts };
+  const pendingCount = receipts.filter(r => r.status === 'pending').length;
+  return { total: receipts.length, today: todayReceipts.length, totalAmount, accounts, pendingCount };
 }

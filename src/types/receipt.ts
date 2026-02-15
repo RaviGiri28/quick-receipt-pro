@@ -11,6 +11,7 @@ export interface ReceiptData {
   serialNumber: number;
   createdAt: string;
   notes: string;
+  customFields?: Record<string, string>;
 }
 
 export interface BusinessInfo {
@@ -20,6 +21,8 @@ export interface BusinessInfo {
   showName: boolean;
   showWatermark: boolean;
   primaryColor: string;
+  address?: string;
+  phone?: string;
 }
 
 export interface UserProfile {
@@ -29,12 +32,18 @@ export interface UserProfile {
   business: BusinessInfo;
 }
 
+export interface CustomFieldDef {
+  id: string;
+  label: string;
+}
+
 export interface AppSettings {
   dualReceipt: boolean;
   showLogo: boolean;
   showName: boolean;
   showWatermark: boolean;
   primaryColor: string;
+  customFields?: CustomFieldDef[];
 }
 
 export const defaultBusinessInfo: BusinessInfo = {
@@ -44,6 +53,8 @@ export const defaultBusinessInfo: BusinessInfo = {
   showName: true,
   showWatermark: true,
   primaryColor: '217 91% 30%',
+  address: '',
+  phone: '',
 };
 
 export const defaultReceipt: ReceiptData = {

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { getStats } from '@/lib/storage';
 import { FeatureCarousel } from '@/components/FeatureCarousel';
-import { FilePlus, History, Receipt, IndianRupee, Users, FileText } from 'lucide-react';
+import { FilePlus, History, Receipt, IndianRupee, Clock, FileText } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ export default function Dashboard() {
     { title: 'Total Receipts', value: stats.total, icon: Receipt },
     { title: "Today's Receipts", value: stats.today, icon: FileText },
     { title: 'Total Amount', value: `₹${stats.totalAmount.toLocaleString('en-IN')}`, icon: IndianRupee },
-    { title: 'Active Accounts', value: stats.accounts, icon: Users },
+    { title: 'Pending Receipts', value: stats.pendingCount, icon: Clock, clickable: true },
   ];
 
   return (
@@ -31,13 +31,20 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(stat => (
-          <Card key={stat.title} className="hover-scale">
+          <Card
+            key={stat.title}
+            className={`hover-scale ${stat.clickable ? 'cursor-pointer' : ''}`}
+            onClick={stat.clickable ? () => navigate('/history?status=pending') : undefined}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
               <stat.icon className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{stat.value}</p>
+              {stat.clickable && (
+                <p className="text-xs text-primary mt-1">Click to view →</p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -57,21 +64,21 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+        <Card className="cursor-pointer hover-scale" onClick={() => navigate('/saved')}>
+          <CardContent className="flex items-center gap-4 p-6">
+            <Receipt className="h-8 w-8 text-primary shrink-0" />
+            <div>
+              <h3 className="font-semibold">Saved Receipts</h3>
+              <p className="text-sm text-muted-foreground">View and manage saved receipts</p>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="cursor-pointer hover-scale" onClick={() => navigate('/history')}>
           <CardContent className="flex items-center gap-4 p-6">
             <History className="h-8 w-8 text-primary shrink-0" />
             <div>
               <h3 className="font-semibold">View History</h3>
               <p className="text-sm text-muted-foreground">Search and filter past receipts</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover-scale" onClick={() => navigate('/settings')}>
-          <CardContent className="flex items-center gap-4 p-6">
-            <Receipt className="h-8 w-8 text-primary shrink-0" />
-            <div>
-              <h3 className="font-semibold">Customize</h3>
-              <p className="text-sm text-muted-foreground">Adjust receipt settings and layout</p>
             </div>
           </CardContent>
         </Card>

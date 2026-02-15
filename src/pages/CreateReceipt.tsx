@@ -6,25 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { parseTransactionText } from '@/lib/receiptParser';
 import { saveReceipt, getNextSerial, getSettings } from '@/lib/storage';
-import { exportToExcel } from '@/lib/excel';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import { Printer, Save, RotateCcw, ClipboardPaste } from 'lucide-react';
@@ -35,6 +25,7 @@ export default function CreateReceipt() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const settings = getSettings();
+  const customFieldDefs = settings.customFields || [];
 
   const business = {
     name: user?.business?.name || 'Quick Receipt',
@@ -43,11 +34,14 @@ export default function CreateReceipt() {
     showName: user?.business?.showName ?? settings.showName,
     showWatermark: user?.business?.showWatermark ?? settings.showWatermark,
     primaryColor: user?.business?.primaryColor || settings.primaryColor,
+    address: user?.business?.address || '',
+    phone: user?.business?.phone || '',
   };
 
   const [receipt, setReceipt] = useState<Partial<ReceiptData>>({
     ...defaultReceipt,
     date: new Date().toLocaleDateString('en-IN'),
+    customFields: {},
   });
   const [pasteText, setPasteText] = useState('');
   const [dualReceipt, setDualReceipt] = useState(settings.dualReceipt);
@@ -67,14 +61,21 @@ export default function CreateReceipt() {
     setReceipt(prev => ({ ...prev, [field]: value }));
   };
 
+  const updateCustomField = (id: string, value: string) => {
+    setReceipt(prev => ({
+      ...prev,
+      customFields: { ...(prev.customFields || {}), [id]: value },
+    }));
+  };
+
   const handleReset = () => {
-    setReceipt({ ...defaultReceipt, date: new Date().toLocaleDateString('en-IN') });
+    setReceipt({ ...defaultReceipt, date: new Date().toLocaleDateString('en-IN'), customFields: {} });
     setPasteText('');
     setStatus('success');
   };
 
   const doSave = () => {
-    const serialNumber = getNextSerial(receipt.accountNumber || 'unknown');
+    const serialNumber = getNextSerial();
     const saved: ReceiptData = {
       ...defaultReceipt,
       ...receipt,
@@ -90,8 +91,7 @@ export default function CreateReceipt() {
 
   const handleSave = () => {
     const saved = doSave();
-    exportToExcel([saved], `receipt-${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}`);
-    toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved and exported.` });
+    toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved successfully.` });
   };
 
   const confirmPrint = () => {
@@ -149,6 +149,23 @@ export default function CreateReceipt() {
                   </Select>
                 </div>
               </div>
+
+              {/* Custom Fields */}
+              {customFieldDefs.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                  {customFieldDefs.map(cf => (
+                    <div key={cf.id}>
+                      <Label>{cf.label}</Label>
+                      <Input
+                        value={receipt.customFields?.[cf.id] || ''}
+                        onChange={e => updateCustomField(cf.id, e.target.value)}
+                        placeholder={cf.label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div><Label>Notes (optional)</Label><Input value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." /></div>
               <div className="flex items-center gap-2">
                 <Checkbox checked={dualReceipt} onCheckedChange={(v) => setDualReceipt(!!v)} id="dual" />
@@ -174,7 +191,7 @@ export default function CreateReceipt() {
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-4 no-print">Live Preview</h3>
           <div className="print-area">
-            <div className={dualReceipt ? 'grid grid-cols-2 gap-4' : ''}>
+            <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
               <ReceiptPreview data={receipt} business={business} />
               {dualReceipt && <ReceiptPreview data={receipt} business={business} />}
             </div>

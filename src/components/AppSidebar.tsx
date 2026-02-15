@@ -1,32 +1,18 @@
 import {
-  Home,
-  FilePlus,
-  History,
-  Settings,
-  User,
-  Info,
-  HelpCircle,
-  LogOut,
-  Receipt,
+  Home, FilePlus, History, Settings, User, Info, HelpCircle, LogOut, Receipt, BookmarkCheck,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter,
 } from '@/components/ui/sidebar';
 
 const mainNav = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Create Receipt', url: '/create', icon: FilePlus },
+  { title: 'Saved Receipts', url: '/saved', icon: BookmarkCheck },
   { title: 'History', url: '/history', icon: History },
 ];
 

@@ -3,12 +3,20 @@ import { ReceiptData } from '@/types/receipt';
 export function parseTransactionText(text: string): Partial<ReceiptData> {
   const result: Partial<ReceiptData> = {};
 
-  // Account number
+  // Account number - first try labeled, then detect 11-16 digit continuous numbers
   const accMatch = text.match(/(?:account|a\/c|ac)\s*(?:no|number|num|#)?\s*[:\-]?\s*(\d{9,18})/i);
-  if (accMatch) result.accountNumber = accMatch[1];
-  else {
-    const numMatch = text.match(/\b(\d{9,18})\b/);
-    if (numMatch) result.accountNumber = numMatch[1];
+  if (accMatch) {
+    result.accountNumber = accMatch[1];
+  } else {
+    // Smart detection: find continuous 11-16 digit numbers
+    const longNumMatch = text.match(/\b(\d{11,16})\b/);
+    if (longNumMatch) {
+      result.accountNumber = longNumMatch[1];
+    } else {
+      // Fallback to 9-18 digit
+      const numMatch = text.match(/\b(\d{9,18})\b/);
+      if (numMatch) result.accountNumber = numMatch[1];
+    }
   }
 
   // IFSC

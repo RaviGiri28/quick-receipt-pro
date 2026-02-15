@@ -5,18 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { getReceipts, getSettings } from '@/lib/storage';
@@ -46,6 +38,8 @@ export default function HistoryPage() {
     showName: user?.business?.showName ?? settings.showName,
     showWatermark: user?.business?.showWatermark ?? settings.showWatermark,
     primaryColor: user?.business?.primaryColor || settings.primaryColor,
+    address: user?.business?.address || '',
+    phone: user?.business?.phone || '',
   };
 
   const filtered = useMemo(() => {
@@ -121,23 +115,27 @@ export default function HistoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>S.No</TableHead>
+                  <TableHead className="w-16">S.No</TableHead>
                   <TableHead>Account Holder</TableHead>
                   <TableHead>Account No</TableHead>
-                  <TableHead>Amount</TableHead>
+                  <TableHead>IFSC</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Txn ID</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell>#{r.serialNumber}</TableCell>
+                    <TableCell className="font-medium">#{r.serialNumber}</TableCell>
                     <TableCell>{r.accountHolder}</TableCell>
                     <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
-                    <TableCell>₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
+                    <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
                     <TableCell>{r.date}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
                     <TableCell>
                       <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
                         {r.status === 'success' ? 'Success' : 'Pending'}
@@ -169,39 +167,43 @@ export default function HistoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Excel View Dialog */}
+      {/* Excel View Dialog - Structured Table */}
       <Dialog open={showExcelView} onOpenChange={setShowExcelView}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-          <DialogHeader><DialogTitle>Excel Data View</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
+          <DialogHeader><DialogTitle>Receipt Data View</DialogTitle></DialogHeader>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>S.No</TableHead>
-                  <TableHead>Account Holder</TableHead>
-                  <TableHead>Account No</TableHead>
-                  <TableHead>IFSC</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Txn ID</TableHead>
-                  <TableHead>Ref No</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-bold w-16">S.No</TableHead>
+                  <TableHead className="font-bold">Account Holder</TableHead>
+                  <TableHead className="font-bold">Account No</TableHead>
+                  <TableHead className="font-bold">IFSC Code</TableHead>
+                  <TableHead className="font-bold text-right">Amount (₹)</TableHead>
+                  <TableHead className="font-bold">Date</TableHead>
+                  <TableHead className="font-bold">Transaction ID</TableHead>
+                  <TableHead className="font-bold">Reference No</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold">Created At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.serialNumber}</TableCell>
+                {filtered.map((r, i) => (
+                  <TableRow key={r.id} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                    <TableCell className="font-medium">#{r.serialNumber}</TableCell>
                     <TableCell>{r.accountHolder}</TableCell>
-                    <TableCell>{r.accountNumber}</TableCell>
-                    <TableCell>{r.ifscCode}</TableCell>
-                    <TableCell>₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
+                    <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
+                    <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
                     <TableCell>{r.date}</TableCell>
-                    <TableCell>{r.transactionId}</TableCell>
-                    <TableCell>{r.referenceNumber}</TableCell>
-                    <TableCell>{r.status}</TableCell>
-                    <TableCell>{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : ''}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.referenceNumber}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
+                        {r.status === 'success' ? 'Success' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : ''}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

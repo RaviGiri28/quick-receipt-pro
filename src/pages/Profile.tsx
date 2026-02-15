@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [businessName, setBusinessName] = useState(user?.business?.name || '');
+  const [businessAddress, setBusinessAddress] = useState(user?.business?.address || '');
+  const [businessPhone, setBusinessPhone] = useState(user?.business?.phone || '');
 
   if (!user) return null;
 
@@ -29,7 +31,11 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
-    updateProfile({ name, phone, business: { ...user.business, name: businessName } });
+    updateProfile({
+      name,
+      phone,
+      business: { ...user.business, name: businessName, address: businessAddress, phone: businessPhone },
+    });
     toast({ title: 'Profile updated' });
   };
 
@@ -50,6 +56,8 @@ export default function ProfilePage() {
         <CardHeader><CardTitle className="text-base">Business Details</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div><Label>Business Name</Label><Input value={businessName} onChange={e => setBusinessName(e.target.value)} /></div>
+          <div><Label>Business Address</Label><Input value={businessAddress} onChange={e => setBusinessAddress(e.target.value)} placeholder="Shop No. 5, Main Road, Mumbai" /></div>
+          <div><Label>Business Phone Number</Label><Input value={businessPhone} onChange={e => setBusinessPhone(e.target.value)} placeholder="+91 98765 43210" /></div>
           <div>
             <Label>Business Logo</Label>
             <div className="flex items-center gap-4 mt-2">
