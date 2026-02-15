@@ -12,12 +12,23 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const { user, signup } = useAuth();
   const { toast } = useToast();
-  const [form, setForm] = useState({ name: '', email: '', password: '', businessName: '', phone: '' });
+  const [form, setForm] = useState({
+    name: '', email: '', password: '', businessName: '', phone: '',
+    businessAddress: '', businessPhone: '',
+  });
 
   if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.businessAddress.trim()) {
+      toast({ title: 'Required', description: 'Business Address is required.', variant: 'destructive' });
+      return;
+    }
+    if (!form.businessPhone.trim()) {
+      toast({ title: 'Required', description: 'Business Phone Number is required.', variant: 'destructive' });
+      return;
+    }
     if (signup(form)) {
       toast({ title: 'Account created', description: 'Welcome to Quick Receipt!' });
       navigate('/');
@@ -42,11 +53,13 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>Full Name</Label><Input value={form.name} onChange={e => update('name', e.target.value)} required /></div>
-            <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => update('email', e.target.value)} required /></div>
-            <div><Label>Password</Label><Input type="password" value={form.password} onChange={e => update('password', e.target.value)} required /></div>
+            <div><Label>Full Name *</Label><Input value={form.name} onChange={e => update('name', e.target.value)} required /></div>
+            <div><Label>Email *</Label><Input type="email" value={form.email} onChange={e => update('email', e.target.value)} required /></div>
+            <div><Label>Password *</Label><Input type="password" value={form.password} onChange={e => update('password', e.target.value)} required /></div>
             <div><Label>Business Name</Label><Input value={form.businessName} onChange={e => update('businessName', e.target.value)} placeholder="Your shop name" /></div>
-            <div><Label>Phone</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 98765 43210" /></div>
+            <div><Label>Business Address *</Label><Input value={form.businessAddress} onChange={e => update('businessAddress', e.target.value)} placeholder="Shop No. 5, Main Road, Mumbai" required /></div>
+            <div><Label>Business Phone Number *</Label><Input value={form.businessPhone} onChange={e => update('businessPhone', e.target.value)} placeholder="+91 98765 43210" required /></div>
+            <div><Label>Personal Phone</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 98765 43210" /></div>
             <Button type="submit" className="w-full">Create Account</Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>

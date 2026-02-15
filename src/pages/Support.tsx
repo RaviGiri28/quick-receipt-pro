@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Mail, MessageSquare } from 'lucide-react';
+import { Send, Mail, MessageSquare, Clock } from 'lucide-react';
 
 export default function SupportPage() {
   const { toast } = useToast();
@@ -45,15 +45,27 @@ export default function SupportPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-6 flex items-center gap-4">
-          <Mail className="h-6 w-6 text-primary" />
-          <div>
-            <h3 className="font-medium">Email Support</h3>
-            <p className="text-sm text-muted-foreground">support@quickreceipt.in</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-6 flex items-center gap-4">
+            <Mail className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-medium">Email Support</h3>
+              <p className="text-sm text-muted-foreground">support@quickreceipt.in</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 flex items-center gap-4">
+            <Clock className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-medium">Working Hours</h3>
+              <p className="text-sm text-muted-foreground">Mon–Fri, 9:00 A.M – 6:00 P.M</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

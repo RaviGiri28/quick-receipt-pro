@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import CreateReceipt from "./pages/CreateReceipt";
 import EditReceipt from "./pages/EditReceipt";
 import History from "./pages/History";
+import SavedReceipts from "./pages/SavedReceipts";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/create" element={<AppLayout><CreateReceipt /></AppLayout>} />
             <Route path="/edit/:id" element={<AppLayout><EditReceipt /></AppLayout>} />
             <Route path="/history" element={<AppLayout><History /></AppLayout>} />
+            <Route path="/saved" element={<AppLayout><SavedReceipts /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
             <Route path="/about" element={<AppLayout><About /></AppLayout>} />

@@ -1,11 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile, defaultBusinessInfo } from '@/types/receipt';
 
+interface SignupData {
+  name: string;
+  email: string;
+  password: string;
+  businessName?: string;
+  phone?: string;
+  businessAddress?: string;
+  businessPhone?: string;
+}
+
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   login: (email: string, password: string) => boolean;
-  signup: (data: { name: string; email: string; password: string; businessName?: string; phone?: string }) => boolean;
+  signup: (data: SignupData) => boolean;
   logout: () => void;
   updateProfile: (data: Partial<UserProfile>) => void;
   loginAsDemo: () => void;
@@ -37,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const signup = (data: { name: string; email: string; password: string; businessName?: string; phone?: string }) => {
+  const signup = (data: SignupData) => {
     const users = JSON.parse(localStorage.getItem('qr_users') || '{}');
     if (users[data.email]) return false;
 
@@ -45,7 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: data.email,
       name: data.name,
       phone: data.phone || '',
-      business: { ...defaultBusinessInfo, name: data.businessName || 'My Business' },
+      business: {
+        ...defaultBusinessInfo,
+        name: data.businessName || 'My Business',
+        address: data.businessAddress || '',
+        phone: data.businessPhone || '',
+      },
     };
 
     users[data.email] = { ...profile, password: data.password };
@@ -78,7 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: 'demo@quickreceipt.in',
       name: 'Demo User',
       phone: '+91 98765 43210',
-      business: { ...defaultBusinessInfo, name: 'Demo Business' },
+      business: {
+        ...defaultBusinessInfo,
+        name: 'Demo Business',
+        address: '123 Main Street, Mumbai, MH 400001',
+        phone: '+91 98765 43210',
+      },
     };
     setUser(demoUser);
     localStorage.setItem('qr_user', JSON.stringify(demoUser));
