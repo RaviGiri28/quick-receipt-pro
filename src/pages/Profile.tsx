@@ -40,8 +40,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up max-w-2xl">
-      <h1 className="text-2xl font-bold">Profile</h1>
+    <div className="space-y-6 animate-fade-in-up max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-center">Profile</h1>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
@@ -75,9 +75,11 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} className="gap-2">
-        <Save className="h-4 w-4" /> Save Profile
-      </Button>
+      <div className="flex justify-center">
+        <Button onClick={handleSave} className="gap-2">
+          <Save className="h-4 w-4" /> Save Profile
+        </Button>
+      </div>
     </div>
   );
 }

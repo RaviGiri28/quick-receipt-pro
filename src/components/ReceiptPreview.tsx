@@ -6,10 +6,11 @@ interface ReceiptPreviewProps {
   data: Partial<ReceiptData>;
   business: BusinessInfo;
   className?: string;
+  compact?: boolean;
 }
 
 export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
-  ({ data, business, className = '' }, ref) => {
+  ({ data, business, className = '', compact = false }, ref) => {
     const settings = getSettings();
     const customFieldDefs = settings.customFields || [];
 
@@ -29,7 +30,7 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
     return (
       <div
         ref={ref}
-        className={`relative bg-card border-2 rounded-lg p-5 max-w-md mx-auto shadow-sm ${className}`}
+        className={`relative bg-card border-2 rounded-lg ${compact ? 'p-3' : 'p-5'} max-w-md mx-auto shadow-sm ${className}`}
         style={{ borderColor: `hsl(${business.primaryColor})` }}
       >
         {/* Watermark */}
@@ -41,11 +42,11 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
 
         {/* Logo */}
         {business.showLogo && business.logo && (
-          <div className="flex justify-center mb-2">
+          <div className={`flex justify-center ${compact ? 'mb-1' : 'mb-2'}`}>
             <img
               src={business.logo}
               alt="Business Logo"
-              className="h-14 w-14 object-contain rounded-full border"
+              className={`${compact ? 'h-10 w-10' : 'h-14 w-14'} object-contain rounded-full border`}
             />
           </div>
         )}
@@ -53,7 +54,7 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
         {/* Business Name */}
         {business.showName && (
           <h2
-            className="text-center text-lg font-bold mb-0"
+            className={`text-center font-bold mb-0 ${compact ? 'text-base' : 'text-lg'}`}
             style={{ color: `hsl(${business.primaryColor})` }}
           >
             {business.name}
@@ -73,38 +74,38 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
         )}
 
         {/* Title */}
-        <div className="text-center mb-4 mt-3">
+        <div className={`text-center ${compact ? 'mb-2 mt-2' : 'mb-4 mt-3'}`}>
           <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Transaction Receipt
           </h3>
           <div
-            className="w-12 h-0.5 mx-auto mt-1.5 rounded-full"
+            className="w-12 h-0.5 mx-auto mt-1 rounded-full"
             style={{ backgroundColor: `hsl(${business.primaryColor})` }}
           />
         </div>
 
         {/* Details */}
-        <div className="space-y-1.5">
+        <div className={compact ? 'space-y-0.5' : 'space-y-1.5'}>
           {fields.map(field => (
             <div
               key={field.label}
-              className="flex justify-between items-center py-1 border-b border-dashed border-border/50"
+              className={`flex justify-between items-center ${compact ? 'py-0.5' : 'py-1'} border-b border-dashed border-border/50`}
             >
               <span className="text-xs text-muted-foreground">{field.label}</span>
-              <span className="text-sm font-medium text-card-foreground">{field.value}</span>
+              <span className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-card-foreground`}>{field.value}</span>
             </div>
           ))}
         </div>
 
         {/* Notes */}
         {data.notes && (
-          <div className="mt-3 text-xs text-muted-foreground">
+          <div className={`${compact ? 'mt-2' : 'mt-3'} text-xs text-muted-foreground`}>
             <span className="font-medium">Notes: </span>{data.notes}
           </div>
         )}
 
         {/* Footer */}
-        <div className="mt-4 pt-3 border-t text-center">
+        <div className={`${compact ? 'mt-2 pt-2' : 'mt-4 pt-3'} border-t text-center`}>
           {data.serialNumber ? (
             <p className="text-xs text-muted-foreground">Serial No: #{data.serialNumber}</p>
           ) : null}

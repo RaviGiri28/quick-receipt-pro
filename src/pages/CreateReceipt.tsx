@@ -20,6 +20,8 @@ import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import { Printer, Save, RotateCcw, ClipboardPaste } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+const todayDate = () => new Date().toLocaleDateString('en-IN');
+
 export default function CreateReceipt() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +42,7 @@ export default function CreateReceipt() {
 
   const [receipt, setReceipt] = useState<Partial<ReceiptData>>({
     ...defaultReceipt,
-    date: new Date().toLocaleDateString('en-IN'),
+    date: todayDate(),
     customFields: {},
   });
   const [pasteText, setPasteText] = useState('');
@@ -52,8 +54,12 @@ export default function CreateReceipt() {
     setPasteText(text);
     if (text.trim()) {
       const parsed = parseTransactionText(text);
-      setReceipt(prev => ({ ...prev, ...parsed }));
+      setReceipt(prev => ({ ...prev, ...parsed, date: todayDate() }));
       toast({ title: 'Fields detected', description: 'Transaction details auto-filled.' });
+    } else {
+      // Clear all auto-filled fields when paste is cleared
+      setReceipt({ ...defaultReceipt, date: todayDate(), customFields: {} });
+      setStatus('success');
     }
   };
 
@@ -69,7 +75,7 @@ export default function CreateReceipt() {
   };
 
   const handleReset = () => {
-    setReceipt({ ...defaultReceipt, date: new Date().toLocaleDateString('en-IN'), customFields: {} });
+    setReceipt({ ...defaultReceipt, date: todayDate(), customFields: {} });
     setPasteText('');
     setStatus('success');
   };
@@ -135,9 +141,9 @@ export default function CreateReceipt() {
                 <div><Label>Account Number</Label><Input value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="1234567890" /></div>
                 <div><Label>IFSC Code</Label><Input value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="SBIN0001234" /></div>
                 <div><Label>Amount (₹)</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000" type="number" /></div>
-                <div><Label>Date</Label><Input value={receipt.date || ''} onChange={e => updateField('date', e.target.value)} placeholder="DD/MM/YYYY" /></div>
+                <div><Label>Date</Label><Input value={receipt.date || todayDate()} readOnly className="bg-muted cursor-not-allowed" /></div>
                 <div><Label>Transaction ID</Label><Input value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="TXN123456" /></div>
-                <div><Label>Reference Number</Label><Input value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="REF789" /></div>
+                <div><Label>Reference Number (optional)</Label><Input value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="REF789" /></div>
                 <div>
                   <Label>Status</Label>
                   <Select value={status} onValueChange={(v: 'success' | 'pending') => setStatus(v)}>
@@ -192,8 +198,8 @@ export default function CreateReceipt() {
           <h3 className="text-sm font-medium text-muted-foreground mb-4 no-print">Live Preview</h3>
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
-              <ReceiptPreview data={receipt} business={business} />
-              {dualReceipt && <ReceiptPreview data={receipt} business={business} />}
+              <ReceiptPreview data={receipt} business={business} compact />
+              {dualReceipt && <ReceiptPreview data={receipt} business={business} compact />}
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { getReceipts, getSettings } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReceiptData } from '@/types/receipt';
-import { Search, Eye, Pencil, Printer } from 'lucide-react';
+import { Search, Eye, Pencil, Printer, FileX } from 'lucide-react';
 
 export default function SavedReceipts() {
   const { user } = useAuth();
@@ -68,7 +68,11 @@ export default function SavedReceipts() {
       <Card>
         <CardContent className="pt-6 overflow-x-auto">
           {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No saved receipts found.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileX className="h-12 w-12 mb-3 opacity-40" />
+              <p className="text-lg font-medium">No Records Available</p>
+              <p className="text-sm">Save a receipt to see it here.</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>

@@ -53,7 +53,7 @@ export default function AboutPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-10 animate-fade-in-up max-w-4xl">
+    <div className="space-y-10 animate-fade-in-up max-w-4xl mx-auto">
       {/* Hero */}
       <div className="text-center space-y-3">
         <div className="flex justify-center">

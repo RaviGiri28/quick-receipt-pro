@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import CreateReceipt from "./pages/CreateReceipt";
@@ -22,28 +23,30 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
-            <Route path="/create" element={<AppLayout><CreateReceipt /></AppLayout>} />
-            <Route path="/edit/:id" element={<AppLayout><EditReceipt /></AppLayout>} />
-            <Route path="/history" element={<AppLayout><History /></AppLayout>} />
-            <Route path="/saved" element={<AppLayout><SavedReceipts /></AppLayout>} />
-            <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
-            <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
-            <Route path="/about" element={<AppLayout><About /></AppLayout>} />
-            <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+              <Route path="/create" element={<AppLayout><CreateReceipt /></AppLayout>} />
+              <Route path="/edit/:id" element={<AppLayout><EditReceipt /></AppLayout>} />
+              <Route path="/history" element={<AppLayout><History /></AppLayout>} />
+              <Route path="/saved" element={<AppLayout><SavedReceipts /></AppLayout>} />
+              <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+              <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
+              <Route path="/about" element={<AppLayout><About /></AppLayout>} />
+              <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
