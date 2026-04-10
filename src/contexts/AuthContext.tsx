@@ -9,6 +9,7 @@ interface SignupData {
   phone?: string;
   businessAddress?: string;
   businessPhone?: string;
+  logo?: string | null;
 }
 
 interface AuthContextType {
@@ -60,13 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: data.businessName || 'My Business',
         address: data.businessAddress || '',
         phone: data.businessPhone || '',
+        logo: data.logo || null,
       },
     };
 
     users[data.email] = { ...profile, password: data.password };
     localStorage.setItem('qr_users', JSON.stringify(users));
-    setUser(profile);
-    localStorage.setItem('qr_user', JSON.stringify(profile));
+    // Do NOT auto-login — redirect to login page
     return true;
   };
 

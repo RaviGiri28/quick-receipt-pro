@@ -20,8 +20,8 @@ export default function SupportPage() {
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
   return (
-    <div className="space-y-6 animate-fade-in-up max-w-2xl">
-      <div>
+    <div className="space-y-6 animate-fade-in-up max-w-2xl mx-auto">
+      <div className="text-center">
         <h1 className="text-2xl font-bold">Support</h1>
         <p className="text-muted-foreground">Have a question or issue? We're here to help.</p>
       </div>

@@ -15,7 +15,7 @@ import { getReceipts, getSettings } from '@/lib/storage';
 import { exportToExcel } from '@/lib/excel';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReceiptData } from '@/types/receipt';
-import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil } from 'lucide-react';
+import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil, FileX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function HistoryPage() {
@@ -90,7 +90,7 @@ export default function HistoryPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
               <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" />
               <span className="text-muted-foreground text-sm">to</span>
@@ -110,7 +110,11 @@ export default function HistoryPage() {
       <Card>
         <CardContent className="pt-6 overflow-x-auto">
           {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No receipts found.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileX className="h-12 w-12 mb-3 opacity-40" />
+              <p className="text-lg font-medium">No Records Available</p>
+              <p className="text-sm">Create your first receipt to see it here.</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -159,56 +163,67 @@ export default function HistoryPage() {
         </CardContent>
       </Card>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog - consistent with SavedReceipts */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Receipt Preview</DialogTitle></DialogHeader>
-          {previewReceipt && <ReceiptPreview data={previewReceipt} business={business} />}
+          {previewReceipt && (
+            <div className="print-area">
+              <ReceiptPreview data={previewReceipt} business={business} />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Excel View Dialog - Structured Table */}
+      {/* Excel View Dialog */}
       <Dialog open={showExcelView} onOpenChange={setShowExcelView}>
         <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
           <DialogHeader><DialogTitle>Receipt Data View</DialogTitle></DialogHeader>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold w-16">S.No</TableHead>
-                  <TableHead className="font-bold">Account Holder</TableHead>
-                  <TableHead className="font-bold">Account No</TableHead>
-                  <TableHead className="font-bold">IFSC Code</TableHead>
-                  <TableHead className="font-bold text-right">Amount (₹)</TableHead>
-                  <TableHead className="font-bold">Date</TableHead>
-                  <TableHead className="font-bold">Transaction ID</TableHead>
-                  <TableHead className="font-bold">Reference No</TableHead>
-                  <TableHead className="font-bold">Status</TableHead>
-                  <TableHead className="font-bold">Created At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r, i) => (
-                  <TableRow key={r.id} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
-                    <TableCell className="font-medium">#{r.serialNumber}</TableCell>
-                    <TableCell>{r.accountHolder}</TableCell>
-                    <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
-                    <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
-                    <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
-                    <TableCell>{r.date}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.referenceNumber}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
-                        {r.status === 'success' ? 'Success' : 'Pending'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : ''}</TableCell>
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileX className="h-12 w-12 mb-3 opacity-40" />
+              <p className="text-lg font-medium">No Records Available</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-bold w-16">S.No</TableHead>
+                    <TableHead className="font-bold">Account Holder</TableHead>
+                    <TableHead className="font-bold">Account No</TableHead>
+                    <TableHead className="font-bold">IFSC Code</TableHead>
+                    <TableHead className="font-bold text-right">Amount (₹)</TableHead>
+                    <TableHead className="font-bold">Date</TableHead>
+                    <TableHead className="font-bold">Transaction ID</TableHead>
+                    <TableHead className="font-bold">Reference No</TableHead>
+                    <TableHead className="font-bold">Status</TableHead>
+                    <TableHead className="font-bold">Created At</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r, i) => (
+                    <TableRow key={r.id} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                      <TableCell className="font-medium">#{r.serialNumber}</TableCell>
+                      <TableCell>{r.accountHolder}</TableCell>
+                      <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
+                      <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
+                      <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
+                      <TableCell>{r.date}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.referenceNumber}</TableCell>
+                      <TableCell>
+                        <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
+                          {r.status === 'success' ? 'Success' : 'Pending'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : ''}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
