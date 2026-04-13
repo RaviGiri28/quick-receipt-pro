@@ -18,13 +18,6 @@ export function exportToExcel(receipts: ReceiptData[], filename: string) {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
 
-  // Add today's date as header
-  const dateHeader = new Date().toLocaleDateString('en-IN', { 
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-  });
-  XLSX.utils.sheet_add_aoa(ws, [[dateHeader]], { origin: 'A1' });
-  XLSX.utils.sheet_add_json(ws, data, { origin: 'A2' });
-
   // Set column widths
   ws['!cols'] = [
     { wch: 10 }, { wch: 20 }, { wch: 18 }, { wch: 14 },
