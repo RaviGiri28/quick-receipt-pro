@@ -128,34 +128,66 @@
     width: 80mm;
     max-width: 80mm;
     margin: 0;
-    padding: 2mm;
+    padding: 1mm;
     box-sizing: border-box;
   }
   .print-area .receipt-card {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 3mm !important;
+    padding: 1.5mm 2mm !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    font-size: 9pt !important;
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
   }
   .print-area .receipt-card * {
     font-size: inherit;
+    line-height: inherit;
   }
   .print-area .receipt-card h2 {
-    font-size: 11pt !important;
+    font-size: 8.5pt !important;
+    margin-bottom: 0 !important;
+  }
+  .print-area .receipt-card h3 {
+    font-size: 6pt !important;
+    margin: 0 !important;
+  }
+  .print-area .receipt-card p {
+    margin: 0 !important;
+  }
+  .print-area .receipt-card img {
+    height: 28px !important;
+    width: 28px !important;
   }
   .print-area .receipt-card .receipt-field-label {
-    font-size: 8pt !important;
+    font-size: 6.5pt !important;
   }
   .print-area .receipt-card .receipt-field-value {
-    font-size: 9pt !important;
+    font-size: 7pt !important;
   }
   .print-area .receipt-card .receipt-footer-note {
-    font-size: 7pt !important;
-    line-height: 1.3 !important;
+    font-size: 5.5pt !important;
+    line-height: 1.15 !important;
+    margin-top: 1mm !important;
+    padding-top: 0.5mm !important;
+  }
+  .print-area .receipt-card .receipt-footer-note p {
+    margin-top: 0.3mm !important;
+  }
+  .print-area .receipt-card div[class*="border-b"],
+  .print-area .receipt-card div[class*="border-t"] {
+    padding-top: 0.3mm !important;
+    padding-bottom: 0.3mm !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .print-area .receipt-card div[class*="space-y"] {
+    gap: 0 !important;
+  }
+  .print-area .receipt-card div[class*="space-y"] > * + * {
+    margin-top: 0 !important;
   }
   .no-print {
     display: none !important;
