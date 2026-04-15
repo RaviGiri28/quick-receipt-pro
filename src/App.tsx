@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import CreateReceipt from "./pages/CreateReceipt";
 import EditReceipt from "./pages/EditReceipt";
 import History from "./pages/History";
@@ -21,6 +22,12 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function HomeRoute() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  return user ? <AppLayout><Index /></AppLayout> : <Navigate to="/landing" replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -30,9 +37,11 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Routes>
+              <Route path="/" element={<HomeRoute />} />
+              <Route path="/landing" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+              <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
               <Route path="/create" element={<AppLayout><CreateReceipt /></AppLayout>} />
               <Route path="/edit/:id" element={<AppLayout><EditReceipt /></AppLayout>} />
               <Route path="/history" element={<AppLayout><History /></AppLayout>} />

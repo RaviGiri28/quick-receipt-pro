@@ -131,6 +131,21 @@
     padding: 1mm;
     box-sizing: border-box;
   }
+  .print-area .grid-cols-2 {
+    display: flex !important;
+    gap: 3mm !important;
+    width: 190mm !important;
+    max-width: 190mm !important;
+  }
+  .print-area .grid-cols-2 > * {
+    flex: 0 0 92mm !important;
+    width: 92mm !important;
+    max-width: 92mm !important;
+  }
+  .print-area:has(.grid-cols-2) {
+    width: 190mm !important;
+    max-width: 190mm !important;
+  }
   .print-area .receipt-card {
     width: 100% !important;
     max-width: 100% !important;
@@ -193,7 +208,7 @@
     display: none !important;
   }
   @page {
-    size: 80mm auto;
+    size: auto;
     margin: 0;
   }
 }
