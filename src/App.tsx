@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import CreateReceipt from "./pages/CreateReceipt";
 import EditReceipt from "./pages/EditReceipt";
 import History from "./pages/History";
