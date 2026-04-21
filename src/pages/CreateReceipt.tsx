@@ -173,8 +173,6 @@ export default function CreateReceipt() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
                 <div><Label>Bank Name</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
                 <div>
                   <Label>Customer Mobile</Label>
