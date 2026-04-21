@@ -175,6 +175,22 @@ export default function CreateReceipt() {
                 </div>
               </div>
 
+                <div><Label>Bank Name</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
+                <div>
+                  <Label>Customer Mobile</Label>
+                  <Input
+                    value={receipt.customerMobile || ''}
+                    onChange={e => updateMobile(e.target.value)}
+                    placeholder="+91 9876543210"
+                    type="tel"
+                    inputMode="tel"
+                    maxLength={14}
+                    aria-invalid={!!mobileError}
+                  />
+                  {mobileError && <p className="text-xs text-destructive mt-1">{mobileError}</p>}
+                </div>
+              </div>
+
               {/* Custom Fields */}
               {customFieldDefs.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
