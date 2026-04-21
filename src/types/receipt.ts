@@ -11,6 +11,8 @@ export interface ReceiptData {
   serialNumber: number;
   createdAt: string;
   notes: string;
+  bankName?: string;
+  customerMobile?: string;
   customFields?: Record<string, string>;
 }
 
@@ -70,4 +72,6 @@ export const defaultReceipt: ReceiptData = {
   serialNumber: 0,
   createdAt: '',
   notes: '',
+  bankName: '',
+  customerMobile: '',
 };

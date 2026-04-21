@@ -63,8 +63,27 @@ export default function CreateReceipt() {
     }
   };
 
+  const [mobileError, setMobileError] = useState('');
+
   const updateField = (field: string, value: string) => {
     setReceipt(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateIndianMobile = (val: string): boolean => {
+    if (!val) return true;
+    return /^(?:\+?91[\s-]?)?[6-9]\d{9}$/.test(val.replace(/\s|-/g, ''));
+  };
+
+  const updateMobile = (value: string) => {
+    let normalized = value.replace(/\s|-/g, '');
+    const match = normalized.match(/^(?:\+?91|0)?([6-9]\d{9})$/);
+    if (match) normalized = match[1];
+    setReceipt(prev => ({ ...prev, customerMobile: normalized }));
+    if (value && !validateIndianMobile(value)) {
+      setMobileError('Enter a valid Indian mobile number (10 digits, starting with 6-9; +91 optional)');
+    } else {
+      setMobileError('');
+    }
   };
 
   const updateCustomField = (id: string, value: string) => {
@@ -140,7 +159,7 @@ export default function CreateReceipt() {
                 <div><Label>Account Holder</Label><Input value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="John Doe" /></div>
                 <div><Label>Account Number</Label><Input value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="1234567890" /></div>
                 <div><Label>IFSC Code</Label><Input value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="SBIN0001234" /></div>
-                <div><Label>Amount (₹)</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000" type="number" /></div>
+                <div><Label>Amount (₹)</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000.00" type="number" step="0.01" inputMode="decimal" /></div>
                 <div><Label>Date</Label><Input value={receipt.date || todayDate()} readOnly className="bg-muted cursor-not-allowed" /></div>
                 <div><Label>Transaction ID</Label><Input value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="TXN123456" /></div>
                 <div><Label>Reference Number (optional)</Label><Input value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="REF789" /></div>
@@ -153,6 +172,20 @@ export default function CreateReceipt() {
                       <SelectItem value="pending">⏳ Pending</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div><Label>Bank Name</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
+                <div>
+                  <Label>Customer Mobile</Label>
+                  <Input
+                    value={receipt.customerMobile || ''}
+                    onChange={e => updateMobile(e.target.value)}
+                    placeholder="+91 9876543210"
+                    type="tel"
+                    inputMode="tel"
+                    maxLength={14}
+                    aria-invalid={!!mobileError}
+                  />
+                  {mobileError && <p className="text-xs text-destructive mt-1">{mobileError}</p>}
                 </div>
               </div>
 
