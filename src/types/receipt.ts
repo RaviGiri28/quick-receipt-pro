@@ -72,4 +72,6 @@ export const defaultReceipt: ReceiptData = {
   serialNumber: 0,
   createdAt: '',
   notes: '',
+  bankName: '',
+  customerMobile: '',
 };
