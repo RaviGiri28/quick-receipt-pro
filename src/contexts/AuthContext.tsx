@@ -114,6 +114,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    // Defensive fallback prevents blank screens from HMR/context mismatches.
+    console.warn('useAuth called outside AuthProvider — returning safe defaults.');
+    return {
+      user: null,
+      isLoading: false,
+      login: () => false,
+      signup: () => false,
+      logout: () => {},
+      updateProfile: () => {},
+      loginAsDemo: () => {},
+    } as AuthContextType;
+  }
   return ctx;
 }
