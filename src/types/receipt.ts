@@ -11,6 +11,8 @@ export interface ReceiptData {
   serialNumber: number;
   createdAt: string;
   notes: string;
+  bankName?: string;
+  customerMobile?: string;
   customFields?: Record<string, string>;
 }
 
