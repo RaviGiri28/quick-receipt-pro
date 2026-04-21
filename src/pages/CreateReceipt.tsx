@@ -63,8 +63,27 @@ export default function CreateReceipt() {
     }
   };
 
+  const [mobileError, setMobileError] = useState('');
+
   const updateField = (field: string, value: string) => {
     setReceipt(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateIndianMobile = (val: string): boolean => {
+    if (!val) return true;
+    return /^(?:\+?91[\s-]?)?[6-9]\d{9}$/.test(val.replace(/\s|-/g, ''));
+  };
+
+  const updateMobile = (value: string) => {
+    let normalized = value.replace(/\s|-/g, '');
+    const match = normalized.match(/^(?:\+?91|0)?([6-9]\d{9})$/);
+    if (match) normalized = match[1];
+    setReceipt(prev => ({ ...prev, customerMobile: normalized }));
+    if (value && !validateIndianMobile(value)) {
+      setMobileError('Enter a valid Indian mobile number (10 digits, starting with 6-9; +91 optional)');
+    } else {
+      setMobileError('');
+    }
   };
 
   const updateCustomField = (id: string, value: string) => {
