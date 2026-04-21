@@ -17,11 +17,13 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
     const fields = [
       { label: 'Account Holder', value: data.accountHolder },
       { label: 'Account Number', value: data.accountNumber },
+      { label: 'Bank Name', value: data.bankName },
       { label: 'IFSC Code', value: data.ifscCode },
-      { label: 'Amount (₹)', value: data.amount ? `₹ ${Number(data.amount).toLocaleString('en-IN')}` : '' },
+      { label: 'Amount (₹)', value: data.amount ? `₹ ${Number(data.amount).toLocaleString('en-IN', { minimumFractionDigits: String(data.amount).includes('.') ? 2 : 0, maximumFractionDigits: 2 })}` : '' },
       { label: 'Date', value: data.date },
       { label: 'Transaction ID', value: data.transactionId },
       { label: 'Reference No', value: data.referenceNumber },
+      { label: 'Customer Mobile', value: data.customerMobile },
       ...customFieldDefs
         .filter(cf => data.customFields?.[cf.id])
         .map(cf => ({ label: cf.label, value: data.customFields![cf.id] })),
