@@ -9,31 +9,33 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Receipt, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { errorMessage } from '@/lib/api';
+import { SUPPORT_EMAIL } from '@/lib/config';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, login, loginAsDemo } = useAuth();
+  const { user, login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) {
+    setSubmitting(true);
+    try {
+      await login(email, password, remember);
       navigate('/');
-    } else {
-      toast({ title: 'Login failed', description: 'Invalid email or password.', variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Login failed', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
-  };
-
-  const handleDemo = () => {
-    loginAsDemo();
-    navigate('/');
   };
 
   return (
@@ -74,11 +76,19 @@ export default function LoginPage() {
                 <Checkbox checked={remember} onCheckedChange={v => setRemember(!!v)} id="remember" />
                 <Label htmlFor="remember" className="text-sm cursor-pointer">Remember me</Label>
               </div>
-              <button type="button" className="text-sm text-primary hover:underline">Forgot password?</button>
+              <button
+                type="button"
+                className="text-sm text-primary hover:underline"
+                onClick={() => toast({
+                  title: 'Forgot your password?',
+                  description: `Email ${SUPPORT_EMAIL} from your registered email address and we will help you reset it.`,
+                })}
+              >
+                Forgot password?
+              </button>
             </div>
-            <Button type="submit" className="w-full">Sign In</Button>
-            <Button type="button" variant="outline" className="w-full" onClick={handleDemo}>
-              Try Demo Access
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Signing in…' : 'Sign In'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account? <Link to="/signup" className="text-primary hover:underline">Sign up</Link>

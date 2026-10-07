@@ -1,5 +1,6 @@
+import { formatInr } from '@/lib/utils';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,8 +15,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { parseTransactionText } from '@/lib/receiptParser';
-import { saveReceipt, getNextSerial, getSettings } from '@/lib/storage';
+import { getSettings } from '@/lib/storage';
+import { receiptsApi, errorMessage } from '@/lib/api';
+import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
+import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateReceipt } from '@/lib/receiptValidation';
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import { Printer, Save, RotateCcw, ClipboardPaste } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,22 +27,11 @@ import { useToast } from '@/hooks/use-toast';
 const todayDate = () => new Date().toLocaleDateString('en-IN');
 
 export default function CreateReceipt() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const settings = getSettings();
-  const customFieldDefs = settings.customFields || [];
-
-  const business = {
-    name: user?.business?.name || 'Quick Receipt',
-    logo: user?.business?.logo || null,
-    showLogo: user?.business?.showLogo ?? settings.showLogo,
-    showName: user?.business?.showName ?? settings.showName,
-    showWatermark: user?.business?.showWatermark ?? settings.showWatermark,
-    primaryColor: user?.business?.primaryColor || settings.primaryColor,
-    address: user?.business?.address || '',
-    phone: user?.business?.phone || '',
-  };
+  const customFieldDefs = useAuth().user?.customFields || [];
+  const business = useBusinessInfo();
 
   const [receipt, setReceipt] = useState<Partial<ReceiptData>>({
     ...defaultReceipt,
@@ -49,16 +42,26 @@ export default function CreateReceipt() {
   const [dualReceipt, setDualReceipt] = useState(settings.dualReceipt);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [status, setStatus] = useState<'success' | 'pending'>('success');
+  const [saving, setSaving] = useState(false);
+  // The receipt created from the current form contents. Set after a save so that
+  // saving/printing again reuses it instead of creating a duplicate; any edit clears it.
+  const [savedReceipt, setSavedReceipt] = useState<ReceiptData | null>(null);
+
+  // Applies a form edit; the edited form is a new receipt, so drop the old serial number.
+  const editReceipt = (update: (prev: Partial<ReceiptData>) => Partial<ReceiptData>) => {
+    setReceipt(prev => ({ ...update(prev), serialNumber: 0 }));
+    setSavedReceipt(null);
+  };
 
   const handlePaste = (text: string) => {
     setPasteText(text);
     if (text.trim()) {
       const parsed = parseTransactionText(text);
-      setReceipt(prev => ({ ...prev, ...parsed, date: todayDate() }));
+      editReceipt(prev => ({ ...prev, ...parsed, date: todayDate() }));
       toast({ title: 'Fields detected', description: 'Transaction details auto-filled.' });
     } else {
       // Clear all auto-filled fields when paste is cleared
-      setReceipt({ ...defaultReceipt, date: todayDate(), customFields: {} });
+      editReceipt(() => ({ ...defaultReceipt, date: todayDate(), customFields: {} }));
       setStatus('success');
     }
   };
@@ -66,63 +69,72 @@ export default function CreateReceipt() {
   const [mobileError, setMobileError] = useState('');
 
   const updateField = (field: string, value: string) => {
-    setReceipt(prev => ({ ...prev, [field]: value }));
-  };
-
-  const validateIndianMobile = (val: string): boolean => {
-    if (!val) return true;
-    return /^(?:\+?91[\s-]?)?[6-9]\d{9}$/.test(val.replace(/\s|-/g, ''));
+    editReceipt(prev => ({ ...prev, [field]: value }));
   };
 
   const updateMobile = (value: string) => {
-    let normalized = value.replace(/\s|-/g, '');
-    const match = normalized.match(/^(?:\+?91|0)?([6-9]\d{9})$/);
-    if (match) normalized = match[1];
-    setReceipt(prev => ({ ...prev, customerMobile: normalized }));
-    if (value && !validateIndianMobile(value)) {
-      setMobileError('Enter a valid Indian mobile number (10 digits, starting with 6-9; +91 optional)');
-    } else {
-      setMobileError('');
-    }
+    editReceipt(prev => ({ ...prev, customerMobile: normalizeIndianMobile(value) }));
+    setMobileError(value && !isValidIndianMobile(value) ? MOBILE_ERROR : '');
+  };
+
+  // Shows the first problem with the form; true when it can be saved.
+  const checkValid = (): boolean => {
+    const problem = validateReceipt(receipt);
+    if (problem) toast({ title: 'Please check the receipt', description: problem, variant: 'destructive' });
+    return !problem;
   };
 
   const updateCustomField = (id: string, value: string) => {
-    setReceipt(prev => ({
+    editReceipt(prev => ({
       ...prev,
       customFields: { ...(prev.customFields || {}), [id]: value },
     }));
   };
 
   const handleReset = () => {
-    setReceipt({ ...defaultReceipt, date: todayDate(), customFields: {} });
+    editReceipt(() => ({ ...defaultReceipt, date: todayDate(), customFields: {} }));
     setPasteText('');
     setStatus('success');
   };
 
-  const doSave = () => {
-    const serialNumber = getNextSerial();
-    const saved: ReceiptData = {
-      ...defaultReceipt,
-      ...receipt,
-      id: crypto.randomUUID(),
-      serialNumber,
-      status,
-      createdAt: new Date().toISOString(),
-      notes: receipt.notes || '',
-    };
-    saveReceipt(saved);
-    return saved;
+  // Creates the receipt on the server, or updates it if this form was already saved;
+  // returns null (after showing the error) if it was rejected.
+  const doSave = async (saveType: 'printed' | 'saved'): Promise<ReceiptData | null> => {
+    if (!checkValid()) return null;
+    setSaving(true);
+    try {
+      const payload = {
+        ...receipt,
+        status,
+        saveType,
+        isDualPrint: saveType === 'printed' && dualReceipt,
+      };
+      const saved = savedReceipt
+        ? await receiptsApi.update(savedReceipt.id, payload)
+        : await receiptsApi.create(payload);
+      setSavedReceipt(saved);
+      setReceipt(prev => ({ ...prev, serialNumber: saved.serialNumber }));
+      queryClient.invalidateQueries({ queryKey: ['receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      return saved;
+    } catch (err) {
+      toast({ title: 'Could not save receipt', description: errorMessage(err), variant: 'destructive' });
+      return null;
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSave = () => {
-    const saved = doSave();
-    toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved successfully.` });
+  const handleSave = async () => {
+    const saved = await doSave('saved');
+    if (saved) toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved successfully.` });
   };
 
-  const confirmPrint = () => {
+  const confirmPrint = async () => {
     setShowPrintDialog(false);
-    const saved = doSave();
-    setReceipt(prev => ({ ...prev, serialNumber: saved.serialNumber }));
+    const saved = await doSave('printed');
+    if (!saved) return;
+    // Give React a moment to render the serial number into the preview before printing.
     setTimeout(() => window.print(), 300);
     toast({ title: 'Receipt printed & saved', description: `Receipt #${saved.serialNumber} saved.` });
   };
@@ -156,16 +168,16 @@ export default function CreateReceipt() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label>Account Holder</Label><Input value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="John Doe" /></div>
-                <div><Label>Account Number</Label><Input value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="1234567890" /></div>
+                <div><Label>Account Holder *</Label><Input value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="John Doe" /></div>
+                <div><Label>Account Number *</Label><Input value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="1234567890" /></div>
                 <div><Label>IFSC Code</Label><Input value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="SBIN0001234" /></div>
-                <div><Label>Amount (₹)</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000.00" type="number" step="0.01" inputMode="decimal" /></div>
+                <div><Label>Amount (₹) *</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000.00" type="number" step="0.01" inputMode="decimal" /></div>
                 <div><Label>Date</Label><Input value={receipt.date || todayDate()} readOnly className="bg-muted cursor-not-allowed" /></div>
-                <div><Label>Transaction ID</Label><Input value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="TXN123456" /></div>
+                <div><Label>Transaction ID *</Label><Input value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="TXN123456" /></div>
                 <div><Label>Reference Number (optional)</Label><Input value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="REF789" /></div>
                 <div>
                   <Label>Status</Label>
-                  <Select value={status} onValueChange={(v: 'success' | 'pending') => setStatus(v)}>
+                  <Select value={status} onValueChange={(v: 'success' | 'pending') => { setStatus(v); editReceipt(prev => prev); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="success">✅ Success</SelectItem>
@@ -173,9 +185,9 @@ export default function CreateReceipt() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Bank Name</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
+                <div><Label>Bank Name *</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
                 <div>
-                  <Label>Customer Mobile</Label>
+                  <Label>Customer Mobile *</Label>
                   <Input
                     value={receipt.customerMobile || ''}
                     onChange={e => updateMobile(e.target.value)}
@@ -205,7 +217,7 @@ export default function CreateReceipt() {
                 </div>
               )}
 
-              <div><Label>Notes (optional)</Label><Input value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." /></div>
+              <div><Label>Notes (optional)</Label><Input value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." maxLength={1000} /></div>
               <div className="flex items-center gap-2">
                 <Checkbox checked={dualReceipt} onCheckedChange={(v) => setDualReceipt(!!v)} id="dual" />
                 <Label htmlFor="dual" className="text-sm cursor-pointer">Print dual receipts (customer + retailer copy)</Label>
@@ -214,11 +226,11 @@ export default function CreateReceipt() {
           </Card>
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setShowPrintDialog(true)} className="gap-2">
+            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} className="gap-2" disabled={saving}>
               <Printer className="h-4 w-4" /> Print Receipt
             </Button>
-            <Button onClick={handleSave} variant="secondary" className="gap-2">
-              <Save className="h-4 w-4" /> Save Receipt
+            <Button onClick={handleSave} variant="secondary" className="gap-2" disabled={saving || !!savedReceipt}>
+              <Save className="h-4 w-4" /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
             </Button>
             <Button onClick={handleReset} variant="outline" className="gap-2">
               <RotateCcw className="h-4 w-4" /> Reset
@@ -247,14 +259,14 @@ export default function CreateReceipt() {
           </DialogHeader>
           <div className="text-sm space-y-2 py-4">
             <p><strong>Account:</strong> {receipt.accountHolder} ({receipt.accountNumber})</p>
-            <p><strong>Amount:</strong> ₹ {Number(receipt.amount || 0).toLocaleString('en-IN')}</p>
+            <p><strong>Amount:</strong> {formatInr(receipt.amount || 0)}</p>
             <p><strong>IFSC:</strong> {receipt.ifscCode}</p>
             <p><strong>Date:</strong> {receipt.date}</p>
             {dualReceipt && <p className="text-muted-foreground">📄 Dual receipt enabled</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPrintDialog(false)}>Cancel</Button>
-            <Button onClick={confirmPrint}>Confirm & Print</Button>
+            <Button onClick={confirmPrint} disabled={saving}>Confirm & Print</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

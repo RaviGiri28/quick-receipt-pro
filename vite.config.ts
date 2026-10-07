@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Forward API calls to the Express backend in dev.
+    proxy: {
+      "/api": "http://localhost:3000",
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

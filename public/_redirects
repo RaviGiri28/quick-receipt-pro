@@ -1,0 +1,2 @@
+# React Router: serve index.html for every page path (otherwise a refresh gives 404)
+/*    /index.html   200

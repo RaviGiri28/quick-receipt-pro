@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { formatInr } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,64 +12,77 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
-import { getReceipts, getSettings } from '@/lib/storage';
-import { exportToExcel } from '@/lib/excel';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Pager } from '@/components/Pager';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { receiptsApi, errorMessage, ReceiptFilters } from '@/lib/api';
+import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDebounce } from '@/hooks/use-debounce';
+import { exportToExcel } from '@/lib/excel';
 import { ReceiptData } from '@/types/receipt';
 import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil, FileX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function HistoryPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const settings = getSettings();
-  const allReceipts = getReceipts();
+  const business = useBusinessInfo();
+  const customFieldDefs = useAuth().user?.customFields || [];
+  const [searchParams] = useSearchParams();
 
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<'all' | 'success' | 'pending'>(
+    searchParams.get('status') === 'pending' ? 'pending' : 'all',
+  );
+  const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [showExcelView, setShowExcelView] = useState(false);
 
-  const business = {
-    name: user?.business?.name || 'Quick Receipt',
-    logo: user?.business?.logo || null,
-    showLogo: user?.business?.showLogo ?? settings.showLogo,
-    showName: user?.business?.showName ?? settings.showName,
-    showWatermark: user?.business?.showWatermark ?? settings.showWatermark,
-    primaryColor: user?.business?.primaryColor || settings.primaryColor,
-    address: user?.business?.address || '',
-    phone: user?.business?.phone || '',
+  const debouncedSearch = useDebounce(search);
+  const filters: ReceiptFilters = {
+    search: debouncedSearch,
+    status: status === 'all' ? undefined : status,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
   };
 
-  const filtered = useMemo(() => {
-    let results = allReceipts;
-    if (search) {
-      const q = search.toLowerCase();
-      results = results.filter(
-        r =>
-          r.accountNumber.toLowerCase().includes(q) ||
-          r.accountHolder.toLowerCase().includes(q) ||
-          String(r.serialNumber).includes(q)
-      );
-    }
-    if (dateFrom) results = results.filter(r => new Date(r.createdAt) >= new Date(dateFrom));
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59);
-      results = results.filter(r => new Date(r.createdAt) <= to);
-    }
-    return results;
-  }, [allReceipts, search, dateFrom, dateTo]);
+  useEffect(() => setPage(1), [debouncedSearch, status, dateFrom, dateTo]);
 
-  const handleExport = () => {
-    if (filtered.length === 0) {
-      toast({ title: 'No data', description: 'No receipts to export.', variant: 'destructive' });
-      return;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['receipts', 'list', filters, page],
+    queryFn: () => receiptsApi.list(filters, page),
+    placeholderData: keepPreviousData,
+  });
+  const receipts = data?.receipts ?? [];
+
+  // The data view and export cover every matching receipt, not just this page.
+  const { data: allMatching = [], isFetching: loadingAll } = useQuery({
+    queryKey: ['receipts', 'all', filters],
+    queryFn: () => receiptsApi.listAll(filters),
+    enabled: showExcelView,
+  });
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const rows = await receiptsApi.listAll(filters);
+      if (rows.length === 0) {
+        toast({ title: 'No data', description: 'No receipts to export.', variant: 'destructive' });
+        return;
+      }
+      exportToExcel(rows, `receipts-${dateFrom || 'all'}-to-${dateTo || 'now'}`, customFieldDefs);
+      toast({ title: 'Exported', description: `${rows.length} receipts exported.` });
+    } catch (err) {
+      toast({ title: 'Export failed', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setExporting(false);
     }
-    exportToExcel(filtered, `receipts-${dateFrom || 'all'}-to-${dateTo || 'now'}`);
-    toast({ title: 'Exported', description: `${filtered.length} receipts exported.` });
   };
 
   return (
@@ -96,7 +110,15 @@ export default function HistoryPage() {
               <span className="text-muted-foreground text-sm">to</span>
               <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
             </div>
-            <Button onClick={handleExport} variant="secondary" className="gap-2">
+            <Select value={status} onValueChange={(v: 'all' | 'success' | 'pending') => setStatus(v)}>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="success">✅ Success</SelectItem>
+                <SelectItem value="pending">⏳ Pending</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleExport} variant="secondary" className="gap-2" disabled={exporting}>
               <Download className="h-4 w-4" /> Export
             </Button>
             <Button onClick={() => setShowExcelView(true)} variant="outline" className="gap-2">
@@ -109,7 +131,17 @@ export default function HistoryPage() {
       {/* Table */}
       <Card>
         <CardContent className="pt-6 overflow-x-auto">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileX className="h-12 w-12 mb-3 opacity-40" />
+              <p className="text-lg font-medium">Could not load receipts</p>
+              <p className="text-sm">{errorMessage(error)}</p>
+            </div>
+          ) : receipts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <FileX className="h-12 w-12 mb-3 opacity-40" />
               <p className="text-lg font-medium">No Records Available</p>
@@ -131,13 +163,13 @@ export default function HistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(r => (
+                {receipts.map(r => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">#{r.serialNumber}</TableCell>
                     <TableCell>{r.accountHolder}</TableCell>
                     <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
                     <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
-                    <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right font-medium">{formatInr(r.amount)}</TableCell>
                     <TableCell>{r.date}</TableCell>
                     <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
                     <TableCell>
@@ -160,6 +192,7 @@ export default function HistoryPage() {
               </TableBody>
             </Table>
           )}
+          {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPageChange={setPage} />}
         </CardContent>
       </Card>
 
@@ -179,7 +212,11 @@ export default function HistoryPage() {
       <Dialog open={showExcelView} onOpenChange={setShowExcelView}>
         <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
           <DialogHeader><DialogTitle>Receipt Data View</DialogTitle></DialogHeader>
-          {filtered.length === 0 ? (
+          {loadingAll ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : allMatching.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <FileX className="h-12 w-12 mb-3 opacity-40" />
               <p className="text-lg font-medium">No Records Available</p>
@@ -202,13 +239,13 @@ export default function HistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r, i) => (
+                  {allMatching.map((r, i) => (
                     <TableRow key={r.id} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
                       <TableCell className="font-medium">#{r.serialNumber}</TableCell>
                       <TableCell>{r.accountHolder}</TableCell>
                       <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
                       <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
-                      <TableCell className="text-right font-medium">₹{Number(r.amount).toLocaleString('en-IN')}</TableCell>
+                      <TableCell className="text-right font-medium">{formatInr(r.amount)}</TableCell>
                       <TableCell>{r.date}</TableCell>
                       <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
                       <TableCell className="font-mono text-xs">{r.referenceNumber}</TableCell>

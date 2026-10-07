@@ -1,19 +1,23 @@
+import { formatInr } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { getStats } from '@/lib/storage';
+import { useQuery } from '@tanstack/react-query';
+import { receiptsApi, localIsoDate } from '@/lib/api';
 import { FeatureCarousel } from '@/components/FeatureCarousel';
 import { FilePlus, History, Receipt, IndianRupee, Clock, FileText } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const stats = getStats();
+  const today = localIsoDate();
+  const { data: stats, isError } = useQuery({ queryKey: ['dashboard', today], queryFn: () => receiptsApi.dashboard(today) });
+  const show = (value?: number | string) => (stats ? value : isError ? '—' : '…');
 
   const statCards = [
-    { title: 'Total Receipts', value: stats.total, icon: Receipt },
-    { title: "Today's Receipts", value: stats.today, icon: FileText },
-    { title: 'Total Amount', value: `₹${stats.totalAmount.toLocaleString('en-IN')}`, icon: IndianRupee },
-    { title: 'Pending Receipts', value: stats.pendingCount, icon: Clock, clickable: true },
+    { title: 'Total Receipts', value: show(stats?.total_receipts), icon: Receipt },
+    { title: "Today's Receipts", value: show(stats?.todays_receipt), icon: FileText },
+    { title: 'Total Amount', value: show(stats && formatInr(stats.total_amount)), icon: IndianRupee },
+    { title: 'Pending Receipts', value: show(stats?.pending_receipts), icon: Clock, clickable: true },
   ];
 
   return (

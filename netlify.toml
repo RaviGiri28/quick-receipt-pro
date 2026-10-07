@@ -1,0 +1,8 @@
+# Netlify build settings (Netlify reads this file from the repo root).
+# Set VITE_API_URL (the Render backend URL) in Netlify > Site configuration > Environment variables.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

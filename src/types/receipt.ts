@@ -10,6 +10,8 @@ export interface ReceiptData {
   status: 'success' | 'pending';
   serialNumber: number;
   createdAt: string;
+  saveType?: 'printed' | 'saved';
+  isDualPrint?: boolean;
   notes: string;
   bankName?: string;
   customerMobile?: string;
@@ -27,11 +29,17 @@ export interface BusinessInfo {
   phone?: string;
 }
 
+// Business details stored on the server; display preferences live in AppSettings.
+export type BusinessProfile = Pick<BusinessInfo, 'name' | 'logo' | 'address' | 'phone'>;
+
 export interface UserProfile {
+  id: number;
   email: string;
   name: string;
   phone: string;
-  business: BusinessInfo;
+  business: BusinessProfile;
+  // Extra receipt fields, shared across devices; null = never saved to the account.
+  customFields: CustomFieldDef[] | null;
 }
 
 export interface CustomFieldDef {
@@ -45,6 +53,8 @@ export interface AppSettings {
   showName: boolean;
   showWatermark: boolean;
   primaryColor: string;
+  // Legacy: custom field definitions used to live here (per device). They now belong to
+  // the account (UserProfile.customFields); AuthContext uploads any left here once.
   customFields?: CustomFieldDef[];
 }
 

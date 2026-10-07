@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { ReceiptData, BusinessInfo } from '@/types/receipt';
-import { getSettings } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ReceiptPreviewProps {
   data: Partial<ReceiptData>;
@@ -11,8 +11,7 @@ interface ReceiptPreviewProps {
 
 export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
   ({ data, business, className = '', compact = false }, ref) => {
-    const settings = getSettings();
-    const customFieldDefs = settings.customFields || [];
+    const customFieldDefs = useAuth().user?.customFields || [];
 
     const fields = [
       { label: 'Account Holder', value: data.accountHolder },

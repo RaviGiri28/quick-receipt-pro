@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { Receipt, Eye, EyeOff, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { errorMessage } from '@/lib/api';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -19,24 +20,21 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoData, setLogoData] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const data = ev.target?.result as string;
-        setLogoPreview(data);
-        setLogoData(data);
-      };
-      reader.readAsDataURL(file);
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+      setLogoPreview(URL.createObjectURL(file));
+      setLogoFile(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessAddress.trim()) {
       toast({ title: 'Required', description: 'Business Address is required.', variant: 'destructive' });
@@ -54,11 +52,15 @@ export default function SignupPage() {
       toast({ title: 'Weak password', description: 'Password must be at least 6 characters.', variant: 'destructive' });
       return;
     }
-    if (signup({ ...form, logo: logoData })) {
+    setSubmitting(true);
+    try {
+      await signup({ ...form, logo: logoFile });
       toast({ title: '✅ Account created successfully', description: 'Please login to enter Quick Receipt.' });
       navigate('/login');
-    } else {
-      toast({ title: 'Signup failed', description: 'Email already exists.', variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Signup failed', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -101,10 +103,10 @@ export default function SignupPage() {
                 <p className="text-xs text-destructive mt-1">Passwords do not match</p>
               )}
             </div>
-            <div><Label>Business Name</Label><Input value={form.businessName} onChange={e => update('businessName', e.target.value)} placeholder="Your shop name" /></div>
-            <div><Label>Business Address *</Label><Input value={form.businessAddress} onChange={e => update('businessAddress', e.target.value)} placeholder="Shop No. 5, Main Road, Mumbai" required /></div>
+            <div><Label>Business Name *</Label><Input value={form.businessName} onChange={e => update('businessName', e.target.value)} placeholder="Your shop name" required /></div>
+            <div><Label>Business Address *</Label><Input value={form.businessAddress} onChange={e => update('businessAddress', e.target.value)} placeholder="Shop No. 5, Main Road, Mumbai" maxLength={500} required /></div>
             <div><Label>Business Phone Number *</Label><Input value={form.businessPhone} onChange={e => update('businessPhone', e.target.value)} placeholder="+91 98765 43210" required /></div>
-            <div><Label>Personal Phone</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 98765 43210" /></div>
+            <div><Label>Personal Phone *</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 98765 43210" required /></div>
             <div>
               <Label>Business Logo</Label>
               <div className="flex items-center gap-4 mt-2">
@@ -114,12 +116,14 @@ export default function SignupPage() {
                 <Button type="button" variant="outline" className="gap-2" asChild>
                   <label className="cursor-pointer">
                     <Upload className="h-4 w-4" /> Upload Logo
-                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
                   </label>
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full">Create Account</Button>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Creating account…' : 'Create Account'}
+            </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
             </p>

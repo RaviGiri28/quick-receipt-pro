@@ -3,17 +3,35 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Navigate } from 'react-router-dom';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionError, retrySession, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Saved session couldn't be checked (server unreachable): offer a retry instead of
+  // sending the user to the login page.
+  if (!user && sessionError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-6 text-center">
+        <WifiOff className="h-10 w-10 text-muted-foreground" />
+        <div>
+          <h1 className="text-lg font-semibold">Can't connect to Quick Receipt</h1>
+          <p className="text-sm text-muted-foreground mt-1">{sessionError}</p>
+        </div>
+        <div className="flex gap-3">
+          <Button onClick={retrySession}>Try again</Button>
+          <Button variant="outline" onClick={logout}>Log out</Button>
+        </div>
       </div>
     );
   }

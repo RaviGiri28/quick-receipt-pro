@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.env
+
+# Stale bun lockfiles; the project uses npm (package-lock.json), and Netlify picks bun if these exist
+bun.lock
+bun.lockb

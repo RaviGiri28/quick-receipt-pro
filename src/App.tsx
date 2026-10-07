@@ -23,9 +23,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function HomeRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionError } = useAuth();
   if (isLoading) return null;
-  return user ? <AppLayout><Index /></AppLayout> : <Navigate to="/landing" replace />;
+  // AppLayout shows the "can't connect" screen when a saved session couldn't be checked.
+  return user || sessionError ? <AppLayout><Index /></AppLayout> : <Navigate to="/landing" replace />;
 }
 
 const App = () => (
