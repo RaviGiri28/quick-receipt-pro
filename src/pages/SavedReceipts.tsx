@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
+import { EmptyState, Spinner } from '@/components/EmptyState';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -20,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getSettings } from '@/lib/storage';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ReceiptData } from '@/types/receipt';
-import { Search, Eye, Pencil, Printer, FileX } from 'lucide-react';
+import { Search, Eye, Pencil, Printer, FileX, FilePlus, Bookmark } from 'lucide-react';
 
 export default function SavedReceipts() {
   const navigate = useNavigate();
@@ -70,11 +72,16 @@ export default function SavedReceipts() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <h1 className="text-2xl font-bold">Saved Receipts</h1>
+    <div className="stagger space-y-6">
+      <PageHeader
+        icon={Bookmark}
+        title="Saved Receipts"
+        description="Receipts you saved for later. Print one to move it to History."
+        actions={<Button onClick={() => navigate('/create')}><FilePlus /> New Receipt</Button>}
+      />
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-4 sm:p-5">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -88,27 +95,22 @@ export default function SavedReceipts() {
       </Card>
 
       <Card>
-        <CardContent className="pt-6 overflow-x-auto">
+        <CardContent className="overflow-x-auto p-2 sm:p-4">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
+            <Spinner />
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileX className="h-12 w-12 mb-3 opacity-40" />
-              <p className="text-lg font-medium">Could not load receipts</p>
-              <p className="text-sm">{errorMessage(error)}</p>
-            </div>
+            <EmptyState icon={FileX} title="Could not load receipts" description={errorMessage(error)} />
           ) : receipts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileX className="h-12 w-12 mb-3 opacity-40" />
-              <p className="text-lg font-medium">No Records Available</p>
-              <p className="text-sm">Save a receipt to see it here.</p>
-            </div>
+            <EmptyState
+              icon={Bookmark}
+              title="No Saved Receipts"
+              description="Save a receipt to see it here."
+              action={<Button onClick={() => navigate('/create')}><FilePlus /> Create Receipt</Button>}
+            />
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-none bg-accent/60 hover:bg-accent/60 [&>th]:h-11 [&>th]:font-semibold [&>th]:text-navy [&>th:first-child]:rounded-l-xl [&>th:last-child]:rounded-r-xl">
                   <TableHead className="w-16">S.No</TableHead>
                   <TableHead>Account Holder</TableHead>
                   <TableHead>Account No</TableHead>
@@ -120,26 +122,24 @@ export default function SavedReceipts() {
               </TableHeader>
               <TableBody>
                 {receipts.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">#{r.serialNumber}</TableCell>
-                    <TableCell>{r.accountHolder}</TableCell>
+                  <TableRow key={r.id} className="group transition-colors hover:bg-accent/50">
+                    <TableCell><span className="rounded-lg bg-accent px-2 py-1 text-xs font-bold text-primary">#{r.serialNumber}</span></TableCell>
+                    <TableCell className="font-semibold text-navy">{r.accountHolder}</TableCell>
                     <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
-                    <TableCell className="text-right font-medium">{formatInr(r.amount)}</TableCell>
+                    <TableCell className="text-right font-bold tabular-nums text-navy">{formatInr(r.amount)}</TableCell>
                     <TableCell>{r.date}</TableCell>
                     <TableCell>
-                      <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
-                        {r.status === 'success' ? 'Success' : 'Pending'}
-                      </Badge>
+                      <StatusBadge status={r.status} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => openPreview(r)}>
+                      <div className="flex gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary" title="Preview" onClick={() => openPreview(r)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => navigate(`/edit/${r.id}`)}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary" title="Edit" onClick={() => navigate(`/edit/${r.id}`)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handlePrint(r)} disabled={printingId !== null}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary hover:text-primary-foreground" title="Print" onClick={() => handlePrint(r)} disabled={printingId !== null}>
                           <Printer className="h-4 w-4" />
                         </Button>
                       </div>
@@ -155,7 +155,7 @@ export default function SavedReceipts() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
-        <DialogContent className={printDual ? 'max-w-3xl' : 'max-w-lg'}>
+        <DialogContent className={`bg-gradient-to-b from-accent/60 to-card ${printDual ? 'max-w-3xl' : 'max-w-lg'}`}>
           <DialogHeader><DialogTitle>Receipt Preview</DialogTitle></DialogHeader>
           {previewReceipt && (
             <div className="print-area">

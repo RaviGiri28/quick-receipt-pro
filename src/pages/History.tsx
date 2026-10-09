@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
+import { EmptyState, Spinner } from '@/components/EmptyState';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -23,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { exportToExcel } from '@/lib/excel';
 import { ReceiptData } from '@/types/receipt';
-import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil, FileX } from 'lucide-react';
+import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil, FileX, FilePlus, History as HistoryIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function HistoryPage() {
@@ -33,7 +35,7 @@ export default function HistoryPage() {
   const customFieldDefs = useAuth().user?.customFields || [];
   const [searchParams] = useSearchParams();
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   const [status, setStatus] = useState<'all' | 'success' | 'pending'>(
     searchParams.get('status') === 'pending' ? 'pending' : 'all',
   );
@@ -53,6 +55,12 @@ export default function HistoryPage() {
   };
 
   useEffect(() => setPage(1), [debouncedSearch, status, dateFrom, dateTo]);
+
+  // The header search box navigates here with ?q=; follow it while already on this page.
+  const queryParam = searchParams.get('q');
+  useEffect(() => {
+    if (queryParam !== null) setSearch(queryParam);
+  }, [queryParam]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['receipts', 'list', filters, page],
@@ -86,13 +94,13 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <h1 className="text-2xl font-bold">Receipt History</h1>
+    <div className="stagger space-y-6">
+      <PageHeader icon={HistoryIcon} title="Receipt History" description="Search, filter and export every receipt you have printed." />
 
       {/* Search & Filter */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -130,27 +138,22 @@ export default function HistoryPage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="pt-6 overflow-x-auto">
+        <CardContent className="overflow-x-auto p-2 sm:p-4">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
+            <Spinner />
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileX className="h-12 w-12 mb-3 opacity-40" />
-              <p className="text-lg font-medium">Could not load receipts</p>
-              <p className="text-sm">{errorMessage(error)}</p>
-            </div>
+            <EmptyState icon={FileX} title="Could not load receipts" description={errorMessage(error)} />
           ) : receipts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileX className="h-12 w-12 mb-3 opacity-40" />
-              <p className="text-lg font-medium">No Records Available</p>
-              <p className="text-sm">Create your first receipt to see it here.</p>
-            </div>
+            <EmptyState
+              icon={FileX}
+              title="No Records Available"
+              description="Create your first receipt to see it here."
+              action={<Button onClick={() => navigate('/create')}><FilePlus /> Create Receipt</Button>}
+            />
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-none bg-accent/60 hover:bg-accent/60 [&>th]:h-11 [&>th]:font-semibold [&>th]:text-navy [&>th:first-child]:rounded-l-xl [&>th:last-child]:rounded-r-xl">
                   <TableHead className="w-16">S.No</TableHead>
                   <TableHead>Account Holder</TableHead>
                   <TableHead>Account No</TableHead>
@@ -164,25 +167,23 @@ export default function HistoryPage() {
               </TableHeader>
               <TableBody>
                 {receipts.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">#{r.serialNumber}</TableCell>
-                    <TableCell>{r.accountHolder}</TableCell>
+                  <TableRow key={r.id} className="group transition-colors hover:bg-accent/50">
+                    <TableCell><span className="rounded-lg bg-accent px-2 py-1 text-xs font-bold text-primary">#{r.serialNumber}</span></TableCell>
+                    <TableCell className="font-semibold text-navy">{r.accountHolder}</TableCell>
                     <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
                     <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
-                    <TableCell className="text-right font-medium">{formatInr(r.amount)}</TableCell>
+                    <TableCell className="text-right font-bold tabular-nums text-navy">{formatInr(r.amount)}</TableCell>
                     <TableCell>{r.date}</TableCell>
                     <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
                     <TableCell>
-                      <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
-                        {r.status === 'success' ? 'Success' : 'Pending'}
-                      </Badge>
+                      <StatusBadge status={r.status} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setPreviewReceipt(r)}>
+                      <div className="flex gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary" title="Preview" onClick={() => setPreviewReceipt(r)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => navigate(`/edit/${r.id}`)}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary" title="Edit" onClick={() => navigate(`/edit/${r.id}`)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </div>
@@ -198,7 +199,7 @@ export default function HistoryPage() {
 
       {/* Preview Dialog - consistent with SavedReceipts */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-gradient-to-b from-accent/60 to-card">
           <DialogHeader><DialogTitle>Receipt Preview</DialogTitle></DialogHeader>
           {previewReceipt && (
             <div className="print-area">
@@ -213,14 +214,9 @@ export default function HistoryPage() {
         <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
           <DialogHeader><DialogTitle>Receipt Data View</DialogTitle></DialogHeader>
           {loadingAll ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
+            <Spinner />
           ) : allMatching.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileX className="h-12 w-12 mb-3 opacity-40" />
-              <p className="text-lg font-medium">No Records Available</p>
-            </div>
+            <EmptyState icon={FileX} title="No Records Available" />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -241,18 +237,16 @@ export default function HistoryPage() {
                 <TableBody>
                   {allMatching.map((r, i) => (
                     <TableRow key={r.id} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
-                      <TableCell className="font-medium">#{r.serialNumber}</TableCell>
-                      <TableCell>{r.accountHolder}</TableCell>
+                      <TableCell><span className="rounded-lg bg-accent px-2 py-1 text-xs font-bold text-primary">#{r.serialNumber}</span></TableCell>
+                      <TableCell className="font-semibold text-navy">{r.accountHolder}</TableCell>
                       <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
                       <TableCell className="font-mono text-sm">{r.ifscCode}</TableCell>
-                      <TableCell className="text-right font-medium">{formatInr(r.amount)}</TableCell>
+                      <TableCell className="text-right font-bold tabular-nums text-navy">{formatInr(r.amount)}</TableCell>
                       <TableCell>{r.date}</TableCell>
                       <TableCell className="font-mono text-xs">{r.transactionId}</TableCell>
                       <TableCell className="font-mono text-xs">{r.referenceNumber}</TableCell>
                       <TableCell>
-                        <Badge variant={r.status === 'success' ? 'default' : 'secondary'}>
-                          {r.status === 'success' ? 'Success' : 'Pending'}
-                        </Badge>
+                        <StatusBadge status={r.status} />
                       </TableCell>
                       <TableCell className="text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : ''}</TableCell>
                     </TableRow>

@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supportApi, errorMessage } from '@/lib/api';
 import { SUPPORT_EMAIL } from '@/lib/config';
-import { Send, Mail, MessageSquare, Clock } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
+import { FormSection, Field } from '@/components/FormSection';
+import { IconInput } from '@/components/IconInput';
+import { Send, Mail, MessageSquare, Clock, LifeBuoy, User, Tag } from 'lucide-react';
 
 const MIN_MESSAGE_LENGTH = 10;
 
@@ -39,54 +39,68 @@ export default function SupportPage() {
 
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
+  const contactCards = [
+    {
+      icon: Mail,
+      title: 'Email Support',
+      body: <a href={`mailto:${SUPPORT_EMAIL}`} className="break-all text-sm text-muted-foreground hover:text-primary hover:underline">{SUPPORT_EMAIL}</a>,
+    },
+    {
+      icon: Clock,
+      title: 'Working Hours',
+      body: <p className="text-sm text-muted-foreground">Mon–Fri, 9:00 A.M – 6:00 P.M</p>,
+    },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in-up max-w-2xl mx-auto">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Support</h1>
-        <p className="text-muted-foreground">Have a question or issue? We're here to help.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        className="animate-fade-in-up"
+        icon={LifeBuoy}
+        title="Support"
+        description="Have a question or issue? We're here to help."
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-4 w-4" /> Contact Us
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <FormSection icon={MessageSquare} title="Contact Us" description="We usually reply within one working day" className="animate-fade-in-up">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><Label>Name</Label><Input value={form.name} onChange={e => update('name', e.target.value)} maxLength={100} required /></div>
-              <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => update('email', e.target.value)} maxLength={100} required /></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Name" htmlFor="name">
+                <IconInput id="name" icon={User} value={form.name} onChange={e => update('name', e.target.value)} maxLength={100} required />
+              </Field>
+              <Field label="Email" htmlFor="email">
+                <IconInput id="email" icon={Mail} type="email" value={form.email} onChange={e => update('email', e.target.value)} maxLength={100} required />
+              </Field>
             </div>
-            <div><Label>Subject</Label><Input value={form.subject} onChange={e => update('subject', e.target.value)} minLength={3} maxLength={150} required /></div>
-            <div><Label>Message</Label><Textarea rows={5} value={form.message} onChange={e => update('message', e.target.value)} placeholder="Describe your problem..." maxLength={5000} required /></div>
-            <Button type="submit" className="gap-2" disabled={sending}>
-              <Send className="h-4 w-4" /> {sending ? 'Sending…' : 'Send Message'}
-            </Button>
+            <Field label="Subject" htmlFor="subject">
+              <IconInput id="subject" icon={Tag} value={form.subject} onChange={e => update('subject', e.target.value)} minLength={3} maxLength={150} required />
+            </Field>
+            <Field label="Message" htmlFor="message">
+              <Textarea
+                id="message" rows={6} value={form.message} onChange={e => update('message', e.target.value)}
+                placeholder="Describe your problem..." maxLength={5000} required
+              />
+              <p className="text-right text-xs text-muted-foreground">{form.message.length} / 5000</p>
+            </Field>
+            <div className="flex justify-end">
+              <Button type="submit" size="lg" disabled={sending}>
+                <Send /> {sending ? 'Sending…' : 'Send Message'}
+              </Button>
+            </div>
           </form>
-        </CardContent>
-      </Card>
+        </FormSection>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Mail className="h-6 w-6 text-primary" />
-            <div>
-              <h3 className="font-medium">Email Support</h3>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-muted-foreground hover:underline">{SUPPORT_EMAIL}</a>
+        <div className="stagger space-y-4">
+          {contactCards.map(c => (
+            <div key={c.title} className="group card-soft card-hover flex items-center gap-4 p-5">
+              <div className="icon-tile icon-tile-pop h-12 w-12"><c.icon className="h-6 w-6" /></div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-navy">{c.title}</h3>
+                {c.body}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Clock className="h-6 w-6 text-primary" />
-            <div>
-              <h3 className="font-medium">Working Hours</h3>
-              <p className="text-sm text-muted-foreground">Mon–Fri, 9:00 A.M – 6:00 P.M</p>
-            </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

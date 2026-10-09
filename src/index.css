@@ -4,68 +4,78 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 15% 15%;
+    --background: 220 60% 98%;
+    --foreground: 224 64% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 224 64% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
-    --primary: 220 70% 50%;
+    --popover-foreground: 224 64% 13%;
+    --primary: 221 83% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 220 15% 20%;
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 220 70% 50%;
-    --accent-foreground: 0 0% 100%;
+    --secondary: 220 70% 96%;
+    --secondary-foreground: 221 70% 30%;
+    --muted: 220 40% 95%;
+    --muted-foreground: 222 14% 44%;
+    --accent: 220 85% 95%;
+    --accent-foreground: 221 83% 45%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 220 70% 50%;
-    --radius: 0.75rem;
+    --border: 220 40% 91%;
+    --input: 220 35% 88%;
+    --ring: 221 83% 50%;
+    --radius: 0.875rem;
     --success: 152 69% 39%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --sidebar-background: 220 15% 15%;
-    --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 220 70% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 22%;
-    --sidebar-accent-foreground: 220 10% 85%;
-    --sidebar-border: 220 15% 22%;
-    --sidebar-ring: 220 70% 55%;
+    --navy: 224 64% 13%;
+    --brand-glow: 217 100% 85%;
+    --sidebar-background: 222 82% 44%;
+    --sidebar-foreground: 220 100% 97%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 221 83% 45%;
+    --sidebar-accent: 0 0% 100% / 0.12;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.14;
+    --sidebar-ring: 0 0% 100%;
+    --sidebar-from: 221 83% 50%;
+    --sidebar-to: 224 85% 33%;
+    --shadow-color: 221 60% 40%;
   }
 
   .dark {
-    --background: 222 25% 7%;
-    --foreground: 220 10% 85%;
-    --card: 222 20% 10%;
-    --card-foreground: 220 10% 85%;
-    --popover: 222 20% 10%;
-    --popover-foreground: 220 10% 85%;
-    --primary: 220 70% 55%;
+    --background: 225 45% 7%;
+    --foreground: 220 30% 92%;
+    --card: 224 40% 11%;
+    --card-foreground: 220 30% 92%;
+    --popover: 224 40% 11%;
+    --popover-foreground: 220 30% 92%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 16%;
-    --secondary-foreground: 220 10% 85%;
-    --muted: 220 15% 16%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 220 70% 55%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 40%;
+    --secondary: 222 35% 17%;
+    --secondary-foreground: 217 91% 80%;
+    --muted: 223 32% 15%;
+    --muted-foreground: 220 15% 64%;
+    --accent: 221 45% 19%;
+    --accent-foreground: 217 91% 75%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 220 70% 55%;
-    --sidebar-background: 222 25% 6%;
-    --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 220 70% 55%;
+    --border: 223 30% 19%;
+    --input: 223 28% 23%;
+    --ring: 217 91% 60%;
+    --navy: 220 30% 95%;
+    --brand-glow: 221 80% 35%;
+    --sidebar-background: 225 50% 9%;
+    --sidebar-foreground: 220 40% 90%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 13%;
-    --sidebar-accent-foreground: 220 10% 85%;
-    --sidebar-border: 220 15% 13%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-accent: 0 0% 100% / 0.08;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.08;
+    --sidebar-ring: 217 91% 60%;
+    --sidebar-from: 223 60% 16%;
+    --sidebar-to: 226 55% 8%;
+    --shadow-color: 225 60% 2%;
   }
 }
 
@@ -73,8 +83,107 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
+}
+
+@layer components {
+  /* Soft blue canvas used behind app pages and auth screens. */
+  .bg-canvas {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(60rem 30rem at 85% -10%, hsl(var(--brand-glow) / 0.45), transparent 60%),
+      radial-gradient(40rem 26rem at -10% 110%, hsl(var(--brand-glow) / 0.35), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  .card-soft {
+    @apply rounded-2xl border bg-card text-card-foreground;
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 8px 24px -12px hsl(var(--shadow-color) / 0.14);
+  }
+
+  .card-hover {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 22px 40px -18px hsl(var(--shadow-color) / 0.35);
+  }
+
+  .icon-tile {
+    @apply inline-flex shrink-0 items-center justify-center rounded-xl bg-accent text-primary;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease, color 0.3s ease;
+  }
+  .group:hover .icon-tile-pop {
+    transform: scale(1.08) rotate(-4deg);
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/10 bg-card/80 px-3.5 py-2 text-sm font-medium text-foreground backdrop-blur;
+    box-shadow: 0 6px 18px -10px hsl(var(--shadow-color) / 0.3);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, hsl(var(--primary)), hsl(214 95% 58%));
+  }
+
+  .font-hand {
+    font-family: 'Caveat', 'Segoe Print', cursive;
+  }
+
+  .btn-glow {
+    box-shadow: 0 10px 24px -10px hsl(var(--primary) / 0.7);
+  }
+  .btn-glow:hover {
+    box-shadow: 0 14px 30px -10px hsl(var(--primary) / 0.85);
+  }
+
+  /* Gradient sidebar with soft wave highlights, as in the design. */
+  [data-sidebar='sidebar'] {
+    background-color: hsl(var(--sidebar-from));
+    background-image:
+      radial-gradient(120% 40% at 0% 100%, hsl(0 0% 100% / 0.08), transparent 60%),
+      radial-gradient(140% 30% at 100% 75%, hsl(0 0% 100% / 0.06), transparent 60%),
+      linear-gradient(180deg, hsl(var(--sidebar-from)), hsl(var(--sidebar-to)));
+  }
+
+  .dot-grid {
+    background-image: radial-gradient(hsl(var(--primary) / 0.25) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
+
+  /* Torn-paper top and bottom edges for on-screen receipts. */
+  .paper-edge-y {
+    --zz: 7px;
+    -webkit-mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--zz)) 51% repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) 51% repeat-x;
+    mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--zz)) 51% repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) 51% repeat-x;
+  }
+  .paper-edge-bottom {
+    --zz: 6px;
+    -webkit-mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--zz)) no-repeat,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) calc(var(--zz) * 2) repeat-x;
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--zz)) no-repeat,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--zz)) calc(var(--zz) * 2) repeat-x;
   }
 }
 
@@ -82,12 +191,22 @@
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-[1.02];
   }
+  .stagger > * {
+    animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.12s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.18s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.24s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.3s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.36s; }
+  .stagger > *:nth-child(n + 8) { animation-delay: 0.42s; }
 }
 
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -96,7 +215,31 @@
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.4s ease-out forwards;
+  animation: fade-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Landing page scroll reveal. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .watermark {
@@ -147,13 +290,17 @@
     max-width: 190mm !important;
   }
   .print-area .receipt-card {
+    -webkit-mask: none !important;
+    mask: none !important;
+    background: #fff !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 1.5mm 2mm !important;
-    border: none !important;
+    /* Solid outline so the printed receipt has a visible frame. */
+    border: 0.35mm solid #000 !important;
     box-shadow: none !important;
-    border-radius: 0 !important;
+    border-radius: 2.5mm !important;
     font-size: 7pt !important;
     line-height: 1.2 !important;
   }
@@ -206,6 +353,16 @@
   }
   .no-print {
     display: none !important;
+  }
+  /* Decorative wrappers around receipts must not become the print-area's containing block. */
+  .print-static {
+    position: static !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+    background: none !important;
+    box-shadow: none !important;
+    border: none !important;
   }
   @page {
     size: auto;

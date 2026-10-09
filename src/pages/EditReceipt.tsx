@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/PageHeader';
+import { IconInput } from '@/components/IconInput';
+import { FormSection, Field } from '@/components/FormSection';
+import { LivePreviewPanel } from '@/components/LivePreviewPanel';
+import { Spinner } from '@/components/EmptyState';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -16,7 +18,10 @@ import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateRecei
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReceiptData } from '@/types/receipt';
-import { Save, Printer, ArrowLeft } from 'lucide-react';
+import {
+  Save, Printer, ArrowLeft, Pencil, User, CreditCard, Landmark, IndianRupee, CalendarDays, Hash, Search,
+  Building2, StickyNote, Smartphone, Tag, Copy, type LucideIcon,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type TextField = 'accountHolder' | 'accountNumber' | 'ifscCode' | 'amount' | 'date'
@@ -34,6 +39,11 @@ const editableFields: { key: TextField; label: string; maxLength?: number }[] = 
   { key: 'bankName', label: 'Bank Name *', maxLength: 100 },
   { key: 'notes', label: 'Notes', maxLength: 1000 },
 ];
+
+const fieldIcons: Record<TextField, LucideIcon> = {
+  accountHolder: User, accountNumber: CreditCard, ifscCode: Landmark, amount: IndianRupee, date: CalendarDays,
+  transactionId: Hash, referenceNumber: Search, bankName: Building2, notes: StickyNote,
+};
 
 export default function EditReceipt() {
   const { id } = useParams();
@@ -71,9 +81,7 @@ export default function EditReceipt() {
 
   if (!receipt) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
+      <Spinner />
     );
   }
 
@@ -122,35 +130,39 @@ export default function EditReceipt() {
   };
 
   return (
-    <div className="animate-fade-in-up">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
-        <h1 className="text-2xl font-bold">Edit Receipt #{receipt.serialNumber}</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        className="animate-fade-in-up"
+        eyebrow="Receipts / Edit"
+        title={`Edit Receipt #${receipt.serialNumber}`}
+        description="Update any detail — the preview refreshes as you type."
+        actions={
+          <Button variant="outline" onClick={() => navigate(-1)} className="group">
+            <ArrowLeft className="transition-transform group-hover:-translate-x-1" /> Back
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="no-print">
-          <CardHeader>
-            <CardTitle className="text-base">Edit Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
+        <div className="stagger space-y-6 no-print">
+          <FormSection icon={Pencil} title="Edit Details">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
               {editableFields.map(f => (
-                <div key={f.key}>
-                  <Label>{f.label}</Label>
-                  <Input
+                <Field key={f.key} label={f.label} htmlFor={f.key}>
+                  <IconInput
+                    id={f.key}
+                    icon={fieldIcons[f.key]}
                     value={receipt[f.key] || ''}
                     onChange={e => updateField(f.key, e.target.value)}
                     maxLength={f.maxLength}
                     inputMode={f.key === 'amount' ? 'decimal' : undefined}
                   />
-                </div>
+                </Field>
               ))}
-              <div>
-                <Label>Customer Mobile *</Label>
-                <Input
+              <Field label="Customer Mobile *" htmlFor="customerMobile" error={mobileError}>
+                <IconInput
+                  id="customerMobile"
+                  icon={Smartphone}
                   value={receipt.customerMobile || ''}
                   onChange={e => updateMobile(e.target.value)}
                   type="tel"
@@ -158,10 +170,8 @@ export default function EditReceipt() {
                   maxLength={14}
                   aria-invalid={!!mobileError}
                 />
-                {mobileError && <p className="text-xs text-destructive mt-1">{mobileError}</p>}
-              </div>
-              <div>
-                <Label>Status</Label>
+              </Field>
+              <Field label="Status">
                 <Select
                   value={receipt.status}
                   onValueChange={(v: 'success' | 'pending') => setReceipt(prev => prev ? { ...prev, status: v } : prev)}
@@ -172,50 +182,56 @@ export default function EditReceipt() {
                     <SelectItem value="pending">⏳ Pending</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </Field>
             </div>
 
             {customFieldDefs.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+              <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 border-t pt-5 sm:grid-cols-2">
                 {customFieldDefs.map(cf => (
-                  <div key={cf.id}>
-                    <Label>{cf.label}</Label>
-                    <Input
+                  <Field key={cf.id} label={cf.label} htmlFor={cf.id}>
+                    <IconInput
+                      id={cf.id}
+                      icon={Tag}
                       value={receipt.customFields?.[cf.id] || ''}
                       onChange={e => updateCustomField(cf.id, e.target.value)}
                       placeholder={cf.label}
                       maxLength={500}
                     />
-                  </div>
+                  </Field>
                 ))}
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <Checkbox checked={dualReceipt} onCheckedChange={(v) => setDualReceipt(!!v)} id="dual" />
-              <Label htmlFor="dual" className="text-sm cursor-pointer">Print dual receipts (customer + retailer copy)</Label>
-            </div>
+            <label htmlFor="dual" className="mt-5 flex cursor-pointer items-center justify-between gap-4 rounded-xl border bg-accent/40 p-4 transition-colors hover:border-primary/30">
+              <span className="flex items-center gap-3">
+                <span className="icon-tile h-10 w-10"><Copy className="h-4 w-4" /></span>
+                <span>
+                  <span className="block text-sm font-semibold text-navy">Print dual receipts</span>
+                  <span className="block text-xs text-muted-foreground">Customer + retailer copy side by side</span>
+                </span>
+              </span>
+              <Switch id="dual" checked={dualReceipt} onCheckedChange={setDualReceipt} />
+            </label>
+          </FormSection>
 
-            <div className="flex gap-3 pt-2">
-              <Button onClick={() => save(false)} className="gap-2" disabled={saving}>
-                <Save className="h-4 w-4" /> Save Changes
-              </Button>
-              <Button onClick={handlePrint} variant="secondary" className="gap-2" disabled={saving}>
-                <Printer className="h-4 w-4" /> Save & Print
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="card-soft flex flex-wrap items-center justify-end gap-3 p-4">
+            <Button onClick={() => save(false)} variant="secondary" disabled={saving}>
+              <Save /> Save Changes
+            </Button>
+            <Button onClick={handlePrint} disabled={saving} className="px-6">
+              <Printer /> Save & Print
+            </Button>
+          </div>
+        </div>
 
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4 no-print">Preview</h3>
+        <LivePreviewPanel title="Preview" className="animate-fade-in-up [animation-delay:0.15s]">
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
               <ReceiptPreview data={receipt} business={business} compact={dualReceipt} />
               {dualReceipt && <ReceiptPreview data={receipt} business={business} compact />}
             </div>
           </div>
-        </div>
+        </LivePreviewPanel>
       </div>
     </div>
   );

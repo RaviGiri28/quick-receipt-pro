@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Save, Upload } from 'lucide-react';
 import { authApi, errorMessage } from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
+import { FormSection, Field } from '@/components/FormSection';
+import { IconInput } from '@/components/IconInput';
+import { LogoMark } from '@/components/brand/Logo';
+import {
+  KeyRound, Save, Upload, User, UserCircle, Mail, Phone, Store, MapPin, Building2, Lock, Eye, EyeOff, ShieldCheck,
+} from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
@@ -19,6 +22,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
 
   if (!user) return null;
 
@@ -68,73 +72,127 @@ export default function ProfilePage() {
     }
   };
 
+  const passwordType = showPasswords ? 'text' : 'password';
+  const passwordToggle = (
+    <button
+      type="button"
+      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+      onClick={() => setShowPasswords(!showPasswords)}
+      aria-label={showPasswords ? 'Hide passwords' : 'Show passwords'}
+    >
+      {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
+
   return (
-    <div className="space-y-6 animate-fade-in-up max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-center">Profile</h1>
+    <div className="space-y-6">
+      <PageHeader
+        className="animate-fade-in-up"
+        icon={UserCircle}
+        title="Profile"
+        description="Manage your account and the business details printed on receipts"
+        actions={
+          <Button onClick={handleSave} disabled={saving} className="px-6">
+            <Save /> {saving ? 'Saving…' : 'Save Profile'}
+          </Button>
+        }
+      />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>Name</Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
-          <div><Label>Email</Label><Input value={user.email} disabled className="bg-muted" /></div>
-          <div><Label>Phone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} /></div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="stagger space-y-6">
+          <FormSection icon={User} title="Personal Information" description="Your name and contact details">
+            <div className="space-y-4">
+              <Field label="Name" htmlFor="name">
+                <IconInput id="name" icon={User} value={name} onChange={e => setName(e.target.value)} />
+              </Field>
+              <Field label="Email" htmlFor="email">
+                <IconInput id="email" icon={Mail} value={user.email} disabled className="bg-muted" />
+              </Field>
+              <Field label="Phone" htmlFor="phone">
+                <IconInput id="phone" icon={Phone} value={phone} onChange={e => setPhone(e.target.value)} />
+              </Field>
+            </div>
+          </FormSection>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Business Details</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>Business Name</Label><Input value={businessName} onChange={e => setBusinessName(e.target.value)} /></div>
-          <div><Label>Business Address</Label><Input value={businessAddress} onChange={e => setBusinessAddress(e.target.value)} placeholder="Shop No. 5, Main Road, Mumbai" maxLength={500} /></div>
-          <div><Label>Business Phone Number</Label><Input value={businessPhone} onChange={e => setBusinessPhone(e.target.value)} placeholder="+91 98765 43210" /></div>
-          <div>
-            <Label>Business Logo</Label>
-            <div className="flex items-center gap-4 mt-2">
-              {user.business.logo && (
-                <img src={user.business.logo} alt="Logo" className="h-16 w-16 rounded-full object-cover border" />
-              )}
-              <Button variant="outline" className="gap-2" asChild>
-                <label className="cursor-pointer">
-                  <Upload className="h-4 w-4" /> Upload Logo
-                  <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
-                </label>
+          <FormSection icon={KeyRound} title="Change Password" description="You'll be signed out on all other devices">
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <Field label="Current Password" htmlFor="currentPassword">
+                <IconInput
+                  id="currentPassword" icon={Lock} type={passwordType} autoComplete="current-password" required
+                  value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))}
+                  trailing={passwordToggle}
+                />
+              </Field>
+              <Field label="New Password" htmlFor="newPassword">
+                <IconInput
+                  id="newPassword" icon={Lock} type={passwordType} autoComplete="new-password" required
+                  value={passwords.next} onChange={e => setPasswords(p => ({ ...p, next: e.target.value }))}
+                />
+              </Field>
+              <Field
+                label="Confirm New Password"
+                htmlFor="confirmPassword"
+                error={passwords.confirm && passwords.next !== passwords.confirm ? 'Passwords do not match' : undefined}
+              >
+                <IconInput
+                  id="confirmPassword" icon={ShieldCheck} type={passwordType} autoComplete="new-password" required
+                  value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))}
+                />
+              </Field>
+              <Button type="submit" variant="secondary" disabled={changingPassword}>
+                <KeyRound /> {changingPassword ? 'Changing…' : 'Change Password'}
               </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </form>
+          </FormSection>
+        </div>
 
-      <div className="flex justify-center">
-        <Button onClick={handleSave} className="gap-2" disabled={saving}>
-          <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Profile'}
-        </Button>
-      </div>
+        <div className="stagger space-y-6">
+          <FormSection icon={Store} title="Business Details" description="Shown in the header of every receipt">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 rounded-xl border border-dashed p-4">
+                {user.business.logo ? (
+                  <img src={user.business.logo} alt="Business logo" className="h-16 w-16 rounded-2xl border object-cover shadow-sm" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
+                    <LogoMark className="h-9 w-9 opacity-60" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-navy">Business Logo</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG or WebP</p>
+                </div>
+                <Button variant="outline" asChild>
+                  <label className="cursor-pointer">
+                    <Upload /> {user.business.logo ? 'Replace' : 'Upload'}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
+                  </label>
+                </Button>
+              </div>
+              <Field label="Business Name" htmlFor="businessName">
+                <IconInput id="businessName" icon={Building2} value={businessName} onChange={e => setBusinessName(e.target.value)} />
+              </Field>
+              <Field label="Business Address" htmlFor="businessAddress">
+                <IconInput
+                  id="businessAddress" icon={MapPin} value={businessAddress} onChange={e => setBusinessAddress(e.target.value)}
+                  placeholder="Shop No. 5, Main Road, Mumbai" maxLength={500}
+                />
+              </Field>
+              <Field label="Business Phone Number" htmlFor="businessPhone">
+                <IconInput
+                  id="businessPhone" icon={Phone} value={businessPhone} onChange={e => setBusinessPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                />
+              </Field>
+            </div>
+          </FormSection>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Change Password</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div>
-              <Label>Current Password</Label>
-              <Input type="password" autoComplete="current-password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} required />
-            </div>
-            <div>
-              <Label>New Password</Label>
-              <Input type="password" autoComplete="new-password" value={passwords.next} onChange={e => setPasswords(p => ({ ...p, next: e.target.value }))} required />
-            </div>
-            <div>
-              <Label>Confirm New Password</Label>
-              <Input type="password" autoComplete="new-password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} required />
-              {passwords.confirm && passwords.next !== passwords.confirm && (
-                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
-              )}
-            </div>
-            <Button type="submit" variant="secondary" className="gap-2" disabled={changingPassword}>
-              <KeyRound className="h-4 w-4" /> {changingPassword ? 'Changing…' : 'Change Password'}
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving} size="lg">
+              <Save /> {saving ? 'Saving…' : 'Save Profile'}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

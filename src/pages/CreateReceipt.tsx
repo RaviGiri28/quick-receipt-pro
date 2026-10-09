@@ -2,17 +2,18 @@ import { formatInr } from '@/lib/utils';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/PageHeader';
+import { IconInput } from '@/components/IconInput';
+import { FormSection, Field } from '@/components/FormSection';
+import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { parseTransactionText } from '@/lib/receiptParser';
 import { getSettings } from '@/lib/storage';
@@ -21,7 +22,10 @@ import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
 import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateReceipt } from '@/lib/receiptValidation';
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
-import { Printer, Save, RotateCcw, ClipboardPaste } from 'lucide-react';
+import {
+  Printer, Save, RotateCcw, ClipboardPaste, Sparkles, FileText, User, CreditCard, Landmark, IndianRupee,
+  CalendarDays, Hash, Search, Building2, UserRound, Smartphone, StickyNote, Tag, Copy, ArrowRight,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const todayDate = () => new Date().toLocaleDateString('en-IN');
@@ -140,133 +144,169 @@ export default function CreateReceipt() {
   };
 
   return (
-    <div className="animate-fade-in-up">
-      <h1 className="text-2xl font-bold mb-6">Create Receipt</h1>
+    <div className="space-y-6">
+      <PageHeader
+        className="animate-fade-in-up"
+        eyebrow="Receipts / New"
+        title="Create Receipt"
+        description="Enter the transaction details below to generate a professional receipt."
+        actions={
+          <div className="flex items-center gap-3 rounded-2xl border border-primary/15 bg-card px-4 py-2.5 text-sm font-medium text-primary shadow-sm">
+            <span className="icon-tile h-9 w-9 rounded-full"><Printer className="h-4 w-4" /></span>
+            <span className="leading-tight">Print on 58mm/80mm<br />Thermal Printer</span>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
         {/* Form */}
-        <div className="space-y-6 no-print">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardPaste className="h-4 w-4" /> Paste Transaction Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        <div className="stagger space-y-6 no-print">
+          <section className="card-soft relative overflow-hidden border-dashed border-primary/30 p-5 sm:p-6">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
+            <div className="relative mb-4 flex items-center gap-3">
+              <div className="icon-tile h-11 w-11 bg-primary text-primary-foreground"><Sparkles className="h-5 w-5" /></div>
+              <div>
+                <h2 className="text-lg font-bold text-navy">Smart Paste</h2>
+                <p className="text-sm text-muted-foreground">Paste the transaction message — fields fill in automatically.</p>
+              </div>
+            </div>
+            <div className="relative">
               <Textarea
                 placeholder="Paste raw transaction details here... Account number, name, IFSC, amount, etc. will be auto-detected."
                 value={pasteText}
                 onChange={e => handlePaste(e.target.value)}
-                rows={4}
+                rows={3}
+                className="pr-10"
               />
-            </CardContent>
-          </Card>
+              <ClipboardPaste className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+            </div>
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Transaction Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label>Account Holder *</Label><Input value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="John Doe" /></div>
-                <div><Label>Account Number *</Label><Input value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="1234567890" /></div>
-                <div><Label>IFSC Code</Label><Input value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="SBIN0001234" /></div>
-                <div><Label>Amount (₹) *</Label><Input value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="5000.00" type="number" step="0.01" inputMode="decimal" /></div>
-                <div><Label>Date</Label><Input value={receipt.date || todayDate()} readOnly className="bg-muted cursor-not-allowed" /></div>
-                <div><Label>Transaction ID *</Label><Input value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="TXN123456" /></div>
-                <div><Label>Reference Number (optional)</Label><Input value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="REF789" /></div>
-                <div>
-                  <Label>Status</Label>
-                  <Select value={status} onValueChange={(v: 'success' | 'pending') => { setStatus(v); editReceipt(prev => prev); }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="success">✅ Success</SelectItem>
-                      <SelectItem value="pending">⏳ Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Bank Name *</Label><Input value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" /></div>
-                <div>
-                  <Label>Customer Mobile *</Label>
-                  <Input
-                    value={receipt.customerMobile || ''}
-                    onChange={e => updateMobile(e.target.value)}
-                    placeholder="+91 9876543210"
-                    type="tel"
-                    inputMode="tel"
-                    maxLength={14}
-                    aria-invalid={!!mobileError}
+          <FormSection icon={FileText} title="Transaction Details">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+              <Field label="Account Holder *" htmlFor="accountHolder">
+                <IconInput id="accountHolder" icon={User} value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="Enter account holder name" />
+              </Field>
+              <Field label="Account Number *" htmlFor="accountNumber">
+                <IconInput id="accountNumber" icon={CreditCard} value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="Enter account number" inputMode="numeric" />
+              </Field>
+              <Field label="IFSC Code" htmlFor="ifscCode">
+                <IconInput id="ifscCode" icon={Landmark} value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="Enter IFSC code" className="uppercase placeholder:normal-case" />
+              </Field>
+              <Field label="Amount (₹) *" htmlFor="amount">
+                <IconInput id="amount" icon={IndianRupee} value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="Enter amount" type="number" step="0.01" inputMode="decimal" />
+              </Field>
+              <Field label="Date" htmlFor="date">
+                <IconInput id="date" icon={CalendarDays} value={receipt.date || todayDate()} readOnly className="cursor-not-allowed bg-muted/60" />
+              </Field>
+              <Field label="Transaction ID *" htmlFor="transactionId">
+                <IconInput id="transactionId" icon={Hash} value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="Enter transaction ID" />
+              </Field>
+              <Field label="Reference Number (optional)" htmlFor="referenceNumber">
+                <IconInput id="referenceNumber" icon={Search} value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="Enter reference number" />
+              </Field>
+              <Field label="Status">
+                <Select value={status} onValueChange={(v: 'success' | 'pending') => { setStatus(v); editReceipt(prev => prev); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="success">✅ Success</SelectItem>
+                    <SelectItem value="pending">⏳ Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Bank Name *" htmlFor="bankName" className="sm:col-span-2">
+                <IconInput id="bankName" icon={Building2} value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection icon={UserRound} title={<>Customer Details <span className="text-sm font-medium text-primary">(mobile required)</span></>}>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+              <Field label="Customer Mobile *" htmlFor="customerMobile" error={mobileError}>
+                <IconInput
+                  id="customerMobile"
+                  icon={Smartphone}
+                  value={receipt.customerMobile || ''}
+                  onChange={e => updateMobile(e.target.value)}
+                  placeholder="+91 9876543210"
+                  type="tel"
+                  inputMode="tel"
+                  maxLength={14}
+                  aria-invalid={!!mobileError}
+                  className={mobileError ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/15' : ''}
+                />
+              </Field>
+              <Field label="Notes (optional)" htmlFor="notes">
+                <IconInput id="notes" icon={StickyNote} value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." maxLength={1000} />
+              </Field>
+              {customFieldDefs.map(cf => (
+                <Field key={cf.id} label={cf.label} htmlFor={cf.id}>
+                  <IconInput
+                    id={cf.id}
+                    icon={Tag}
+                    value={receipt.customFields?.[cf.id] || ''}
+                    onChange={e => updateCustomField(cf.id, e.target.value)}
+                    placeholder={cf.label}
                   />
-                  {mobileError && <p className="text-xs text-destructive mt-1">{mobileError}</p>}
-                </div>
-              </div>
+                </Field>
+              ))}
+            </div>
+            <label htmlFor="dual" className="mt-5 flex cursor-pointer items-center justify-between gap-4 rounded-xl border bg-accent/40 p-4 transition-colors hover:border-primary/30">
+              <span className="flex items-center gap-3">
+                <span className="icon-tile h-10 w-10"><Copy className="h-4 w-4" /></span>
+                <span>
+                  <span className="block text-sm font-semibold text-navy">Print dual receipts</span>
+                  <span className="block text-xs text-muted-foreground">Customer + retailer copy side by side</span>
+                </span>
+              </span>
+              <Switch id="dual" checked={dualReceipt} onCheckedChange={setDualReceipt} />
+            </label>
+          </FormSection>
 
-              {/* Custom Fields */}
-              {customFieldDefs.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
-                  {customFieldDefs.map(cf => (
-                    <div key={cf.id}>
-                      <Label>{cf.label}</Label>
-                      <Input
-                        value={receipt.customFields?.[cf.id] || ''}
-                        onChange={e => updateCustomField(cf.id, e.target.value)}
-                        placeholder={cf.label}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div><Label>Notes (optional)</Label><Input value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." maxLength={1000} /></div>
-              <div className="flex items-center gap-2">
-                <Checkbox checked={dualReceipt} onCheckedChange={(v) => setDualReceipt(!!v)} id="dual" />
-                <Label htmlFor="dual" className="text-sm cursor-pointer">Print dual receipts (customer + retailer copy)</Label>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} className="gap-2" disabled={saving}>
-              <Printer className="h-4 w-4" /> Print Receipt
+          <div className="card-soft flex flex-wrap items-center justify-between gap-3 p-4">
+            <Button onClick={handleReset} variant="outline" className="group">
+              <RotateCcw className="transition-transform duration-500 group-hover:-rotate-180" /> Reset
             </Button>
-            <Button onClick={handleSave} variant="secondary" className="gap-2" disabled={saving || !!savedReceipt}>
-              <Save className="h-4 w-4" /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
-            </Button>
-            <Button onClick={handleReset} variant="outline" className="gap-2">
-              <RotateCcw className="h-4 w-4" /> Reset
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={handleSave} variant="secondary" disabled={saving || !!savedReceipt}>
+                <Save /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
+              </Button>
+              <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving} className="group px-6">
+                <Printer /> Generate & Print <ArrowRight className="transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Preview */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4 no-print">Live Preview</h3>
+        <LivePreviewPanel className="animate-fade-in-up [animation-delay:0.15s]">
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
               <ReceiptPreview data={receipt} business={business} compact />
               {dualReceipt && <ReceiptPreview data={receipt} business={business} compact />}
             </div>
           </div>
-        </div>
+        </LivePreviewPanel>
       </div>
 
       {/* Print Confirmation */}
       <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Print</DialogTitle>
+            <div className="icon-tile mb-2 h-12 w-12"><Printer className="h-6 w-6" /></div>
+            <DialogTitle className="text-xl">Confirm Print</DialogTitle>
             <DialogDescription>Please review all details before printing. The receipt will be saved automatically.</DialogDescription>
           </DialogHeader>
-          <div className="text-sm space-y-2 py-4">
-            <p><strong>Account:</strong> {receipt.accountHolder} ({receipt.accountNumber})</p>
-            <p><strong>Amount:</strong> {formatInr(receipt.amount || 0)}</p>
-            <p><strong>IFSC:</strong> {receipt.ifscCode}</p>
-            <p><strong>Date:</strong> {receipt.date}</p>
-            {dualReceipt && <p className="text-muted-foreground">📄 Dual receipt enabled</p>}
+          <div className="space-y-2 rounded-xl bg-accent/50 p-4 text-sm">
+            <p className="flex justify-between gap-4"><span className="text-muted-foreground">Account</span><strong className="text-right">{receipt.accountHolder} ({receipt.accountNumber})</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-muted-foreground">Amount</span><strong>{formatInr(receipt.amount || 0)}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-muted-foreground">IFSC</span><strong>{receipt.ifscCode}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-muted-foreground">Date</span><strong>{receipt.date}</strong></p>
+            {dualReceipt && <p className="pt-1 text-primary">📄 Dual receipt enabled</p>}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowPrintDialog(false)}>Cancel</Button>
-            <Button onClick={confirmPrint} disabled={saving}>Confirm & Print</Button>
+            <Button onClick={confirmPrint} disabled={saving}><Printer /> Confirm & Print</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

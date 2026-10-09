@@ -1,26 +1,28 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { PublicNav } from '@/components/PublicNav';
+import { PrinterHero } from '@/components/PrinterHero';
+import { Logo } from '@/components/brand/Logo';
 import {
-  Receipt, Printer, History, FileSpreadsheet, Copy, Zap,
-  CheckCircle, ArrowRight, Shield, Clock, Users, Star
+  Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 const features = [
-  { icon: Zap, title: 'Instant Generation', desc: 'Create professional receipts in seconds with smart auto-fill' },
-  { icon: Printer, title: 'Thermal Printing', desc: 'Optimized for 58mm & 80mm thermal printers' },
-  { icon: History, title: 'Transaction History', desc: 'Track and search all past transactions easily' },
-  { icon: FileSpreadsheet, title: 'Excel Export', desc: 'Export your records to Excel with one click' },
-  { icon: Copy, title: 'Dual Printing', desc: 'Print customer & retailer copies simultaneously' },
-  { icon: Shield, title: 'Secure & Reliable', desc: 'Your data stays safe with local-first storage' },
+  { icon: Zap, title: 'Instant Generation', desc: 'Create professional receipts in seconds with smart auto-fill.' },
+  { icon: Printer, title: 'Thermal Printing', desc: 'Optimized for 58mm & 80mm thermal printers.' },
+  { icon: History, title: 'Transaction History', desc: 'Track and search all past transactions easily.' },
+  { icon: FileSpreadsheet, title: 'Excel Export', desc: 'Export your records to Excel with one click.' },
+  { icon: Copy, title: 'Dual Printing', desc: 'Print customer & retailer copies simultaneously.' },
+  { icon: ShieldCheck, title: 'Secure & Reliable', desc: 'Your receipts are tied to your account and protected by login.' },
 ];
 
 const steps = [
-  { num: '01', title: 'Enter Details', desc: 'Paste or type transaction details — fields auto-fill instantly' },
-  { num: '02', title: 'Generate Receipt', desc: 'Preview your professional receipt in real-time' },
-  { num: '03', title: 'Print or Save', desc: 'Print on thermal paper or save for later use' },
-  { num: '04', title: 'Track History', desc: 'All transactions are saved and exportable to Excel' },
+  { num: '01', title: 'Enter Details', desc: 'Paste or type transaction details — fields auto-fill instantly.' },
+  { num: '02', title: 'Generate Receipt', desc: 'Preview your professional receipt in real-time.' },
+  { num: '03', title: 'Print or Save', desc: 'Print on thermal paper or save for later use.' },
+  { num: '04', title: 'Track History', desc: 'All transactions are saved and exportable to Excel.' },
 ];
 
 const benefits = [
@@ -30,160 +32,108 @@ const benefits = [
   { icon: Star, title: 'Professional Look', desc: 'Clean, branded receipts that build trust' },
 ];
 
+const faqs = [
+  { q: 'Which printers does Quick Receipt support?', a: 'Receipts are laid out for 58mm and 80mm thermal printers, and print from any browser with your normal print dialog.' },
+  { q: 'Can I print a copy for the customer and one for my shop?', a: 'Yes. Turn on dual receipts while creating a receipt (or make it the default in Settings) and both copies print side by side.' },
+  { q: 'How does Smart Paste work?', a: 'Paste the raw transaction message you received and Quick Receipt detects the account number, name, IFSC, amount and other details for you.' },
+  { q: 'Can I add my shop logo and details?', a: 'Yes. Add your business name, address, phone and logo in your profile. You can also add your own custom fields in Settings.' },
+  { q: 'Can I export my receipts?', a: 'Yes. Filter your history by date or status and export every matching receipt to an Excel file in one click.' },
+];
+
 function useScrollReveal() {
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-          }
-        });
-      },
-      { threshold: 0.1 }
+      entries => entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          observer.unobserve(entry.target);
+        }
+      }),
+      { threshold: 0.12 },
     );
-    document.querySelectorAll('.scroll-reveal').forEach((el) => observer.observe(el));
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 }
 
+function SectionTitle({ lead, accent, sub }: { lead: string; accent: string; sub: string }) {
+  return (
+    <div className="reveal mb-12 text-center">
+      <div className="flex items-center justify-center gap-5">
+        <span className="hidden h-0.5 w-12 rounded-full bg-primary/60 sm:block" />
+        <h2 className="text-3xl font-extrabold text-navy sm:text-4xl">
+          {lead} <span className="text-primary">{accent}</span>
+        </h2>
+        <span className="hidden h-0.5 w-12 rounded-full bg-primary/60 sm:block" />
+      </div>
+      <p className="mt-3 text-muted-foreground sm:text-lg">{sub}</p>
+    </div>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
-  const [heroVisible, setHeroVisible] = useState(false);
   useScrollReveal();
 
-  useEffect(() => {
-    const t = setTimeout(() => setHeroVisible(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold text-foreground">Quick Receipt</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Login</Button>
-            <Button size="sm" onClick={() => navigate('/signup')}>Get Started</Button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen overflow-x-hidden bg-canvas text-foreground">
+      <PublicNav active="Home" />
 
       {/* Hero */}
-      <section className="relative py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
-          <div
-            className={`flex-1 text-center lg:text-left transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-          >
-            <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
-              🇮🇳 Built for Indian Retailers
+      <section id="home" className="relative scroll-mt-20 px-4 pb-16 pt-8 sm:px-6 lg:pb-24 lg:pt-12">
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-full bg-gradient-to-b from-accent/70 via-accent/30 to-transparent" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.15fr_1fr]">
+          <div className="stagger space-y-6 text-center lg:text-left">
+            <div className="chip mx-auto w-fit text-primary lg:mx-0">
+              <span className="flex h-4 w-6 flex-col overflow-hidden rounded-[3px] shadow-sm" aria-hidden>
+                <span className="flex-1 bg-[#FF9933]" />
+                <span className="relative flex-1 bg-white"><span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#000080]" /></span>
+                <span className="flex-1 bg-[#138808]" />
+              </span>
+              Built for Indian Retailers
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-foreground">
+            <h1 className="text-4xl font-extrabold leading-[1.05] text-navy sm:text-5xl xl:text-6xl">
               Quick Receipt Generator
-              <span className="block text-primary mt-1">for Mobile Retailers</span>
+              <span className="mt-1 block text-gradient">for Mobile Retailers</span>
             </h1>
-            <p className="mt-4 text-muted-foreground text-base sm:text-lg max-w-lg mx-auto lg:mx-0">
+            <p className="mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
               Generate professional transaction receipts instantly. Paste details, auto-fill fields, print on thermal paper — all in seconds.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3 justify-center lg:justify-start">
-              <Button size="lg" onClick={() => navigate('/signup')} className="gap-2">
-                Get Started Free <ArrowRight className="h-4 w-4" />
+            <div className="flex flex-wrap justify-center gap-3 lg:justify-start">
+              <span className="chip"><Zap className="h-4 w-4 fill-primary text-primary" /> Fast & Easy</span>
+              <span className="chip"><ShieldCheck className="h-4 w-4 text-primary" /> Secure & Reliable</span>
+              <span className="chip"><MonitorCheck className="h-4 w-4 text-primary" /> Print Ready</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 pt-2 lg:justify-start">
+              <Button size="lg" onClick={() => navigate('/signup')} className="group h-14 px-8 text-lg">
+                Get Started Free <ArrowRight className="transition-transform group-hover:translate-x-1" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/login')}>
+              <Button size="lg" variant="outline" onClick={() => navigate('/login')} className="h-14 px-10 text-lg">
                 Login
               </Button>
             </div>
           </div>
-
-          {/* Sample Receipt Preview */}
-          <div
-            className={`flex-1 max-w-sm w-full transition-all duration-700 delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-          >
-            <div className="relative">
-              <div className="absolute -inset-4 bg-primary/5 rounded-2xl blur-xl" />
-              <Card className="relative border-2 border-primary/20 shadow-lg">
-                <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="text-center">
-                    <p className="font-bold text-primary text-base">Sharma Digital Services</p>
-                    <p className="text-[10px] text-muted-foreground">Shop No. 5, Main Road, Jaipur</p>
-                    <p className="text-[10px] text-muted-foreground">Mob:- 9876543210</p>
-                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mt-2">Transaction Receipt</p>
-                    <div className="w-8 h-0.5 mx-auto mt-1 bg-primary/40 rounded-full" />
-                  </div>
-                  <div className="space-y-1.5 pt-2">
-                    {[
-                      ['Account Holder', 'Amit Sharma'],
-                      ['Account Number', '987654321045'],
-                      ['IFSC Code', 'HDFC0005678'],
-                      ['Amount (₹)', '₹ 12,000'],
-                      ['Date', '15/04/2026'],
-                      ['Transaction ID', 'TXN1002'],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex justify-between border-b border-dashed border-border/50 pb-1">
-                        <span className="text-muted-foreground text-xs">{label}</span>
-                        <span className="font-medium text-xs">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-center text-[8px] text-muted-foreground/60 pt-2">Generated by Quick Receipt</p>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="mx-auto w-full max-w-[600px] animate-fade-in-up [animation-delay:0.2s]">
+            <PrinterHero business={{ name: 'Mobile Shop', address: 'Makkar Colony, Ludhiana', phone: '6239979480' }} />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-16 px-4 sm:px-6 bg-muted/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12 scroll-reveal opacity-0 translate-y-6 transition-all duration-600 [&.revealed]:opacity-100 [&.revealed]:translate-y-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Powerful Features</h2>
-            <p className="text-muted-foreground mt-2">Everything you need to manage receipts efficiently</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <section id="features" className="scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle lead="Powerful" accent="Features" sub="Everything you need to manage receipts efficiently" />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f, i) => (
-              <Card
+              <div
                 key={f.title}
-                className="scroll-reveal opacity-0 translate-y-6 transition-all duration-500 [&.revealed]:opacity-100 [&.revealed]:translate-y-0 hover:shadow-md hover:-translate-y-1"
-                style={{ transitionDelay: `${i * 80}ms` }}
+                className="reveal card-soft card-hover group flex items-start gap-5 p-6"
+                style={{ transitionDelay: `${i * 70}ms` }}
               >
-                <CardContent className="p-5 flex items-start gap-4">
-                  <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
-                    <f.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{f.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-16 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12 scroll-reveal opacity-0 translate-y-6 transition-all duration-600 [&.revealed]:opacity-100 [&.revealed]:translate-y-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">How It Works</h2>
-            <p className="text-muted-foreground mt-2">Four simple steps to generate receipts</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {steps.map((s, i) => (
-              <div
-                key={s.num}
-                className="scroll-reveal opacity-0 translate-y-6 transition-all duration-500 [&.revealed]:opacity-100 [&.revealed]:translate-y-0 flex items-start gap-4 p-5 rounded-xl border border-border bg-card"
-                style={{ transitionDelay: `${i * 100}ms` }}
-              >
-                <span className="text-2xl font-bold text-primary/30">{s.num}</span>
+                <div className="icon-tile icon-tile-pop h-14 w-14 rounded-2xl"><f.icon className="h-7 w-7" /></div>
                 <div>
-                  <h3 className="font-semibold text-foreground">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{s.desc}</p>
+                  <h3 className="text-lg font-bold text-navy">{f.title}</h3>
+                  <p className="mt-1 text-muted-foreground">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -191,51 +141,81 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-16 px-4 sm:px-6 bg-muted/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12 scroll-reveal opacity-0 translate-y-6 transition-all duration-600 [&.revealed]:opacity-100 [&.revealed]:translate-y-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Why Choose Quick Receipt?</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {benefits.map((b, i) => (
-              <div
-                key={b.title}
-                className="scroll-reveal opacity-0 translate-y-6 transition-all duration-500 [&.revealed]:opacity-100 [&.revealed]:translate-y-0 text-center p-5 rounded-xl border border-border bg-card"
-                style={{ transitionDelay: `${i * 80}ms` }}
-              >
-                <div className="inline-flex p-3 rounded-full bg-primary/10 mb-3">
-                  <b.icon className="h-5 w-5 text-primary" />
+      {/* How it works */}
+      <section id="how-it-works" className="scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle lead="How It" accent="Works" sub="Four simple steps to generate receipts" />
+          <div className="relative grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="absolute left-[12%] right-[12%] top-10 hidden h-0.5 border-t-2 border-dashed border-primary/25 lg:block" />
+            {steps.map((s, i) => (
+              <div key={s.num} className="reveal relative text-center" style={{ transitionDelay: `${i * 110}ms` }}>
+                <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-card text-2xl font-extrabold text-primary shadow-[0_14px_30px_-14px_hsl(var(--primary)/0.6)] ring-8 ring-accent">
+                  {s.num}
                 </div>
-                <h3 className="font-semibold text-foreground">{b.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{b.desc}</p>
+                <h3 className="mt-5 text-lg font-bold text-navy">{s.title}</h3>
+                <p className="mx-auto mt-1 max-w-[16rem] text-sm text-muted-foreground">{s.desc}</p>
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Why choose */}
+      <section className="px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle lead="Why Choose" accent="Quick Receipt?" sub="Made for busy counters and fast-moving queues" />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {benefits.map((b, i) => (
+              <div key={b.title} className="reveal card-soft card-hover group p-6 text-center" style={{ transitionDelay: `${i * 70}ms` }}>
+                <div className="icon-tile icon-tile-pop mx-auto mb-4 h-14 w-14 rounded-full"><b.icon className="h-6 w-6" /></div>
+                <h3 className="font-bold text-navy">{b.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <SectionTitle lead="Frequently Asked" accent="Questions" sub="Everything you need to know before you start" />
+          <Accordion type="single" collapsible className="reveal space-y-3">
+            {faqs.map((f, i) => (
+              <AccordionItem key={f.q} value={`q${i}`} className="card-soft border px-5">
+                <AccordionTrigger className="text-left font-semibold text-navy hover:text-primary hover:no-underline">{f.q}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-4 sm:px-6">
-        <div className="max-w-2xl mx-auto text-center scroll-reveal opacity-0 translate-y-6 transition-all duration-600 [&.revealed]:opacity-100 [&.revealed]:translate-y-0">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Ready to Get Started?</h2>
-          <p className="text-muted-foreground mt-3">Join thousands of Indian retailers who trust Quick Receipt for their daily transactions.</p>
-          <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <Button size="lg" onClick={() => navigate('/signup')} className="gap-2">
-              Get Started Free <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/login')}>Login</Button>
+      <section className="px-4 pb-20 pt-8 sm:px-6">
+        <div className="reveal relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-[hsl(221_83%_50%)] to-[hsl(224_85%_33%)] px-6 py-14 text-center text-white shadow-[0_30px_60px_-30px_hsl(var(--primary)/0.8)]">
+          <div className="absolute -left-20 -top-20 h-64 w-64 animate-blob bg-white/10" />
+          <div className="absolute -bottom-24 -right-16 h-72 w-72 animate-blob bg-white/10 [animation-delay:-5s]" />
+          <div className="relative">
+            <h2 className="text-3xl font-extrabold sm:text-4xl">Ready to Get Started?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-white/80 sm:text-lg">
+              Join thousands of Indian retailers who trust Quick Receipt for their daily transactions.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button size="lg" onClick={() => navigate('/signup')} className="group h-14 bg-white px-8 text-lg text-primary shadow-xl hover:bg-white/90">
+                Get Started Free <ArrowRight className="transition-transform group-hover:translate-x-1" />
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate('/login')} className="h-14 border-white/40 bg-transparent px-10 text-lg text-white hover:bg-white/10 hover:text-white">
+                Login
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 px-4 sm:px-6 bg-muted/20">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-primary" />
-            <span className="font-medium text-foreground">Quick Receipt</span>
-          </div>
+      <footer className="border-t border-border/60 px-4 py-8 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
+          <Logo markClassName="h-8 w-8" textClassName="text-lg" />
           <p>© {new Date().getFullYear()} Quick Receipt. Built for Indian retailers.</p>
         </div>
       </footer>
