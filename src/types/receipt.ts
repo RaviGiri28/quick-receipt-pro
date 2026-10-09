@@ -40,6 +40,8 @@ export interface UserProfile {
   business: BusinessProfile;
   // Extra receipt fields, shared across devices; null = never saved to the account.
   customFields: CustomFieldDef[] | null;
+  // Can publish blog posts and announcements (set by the server from ADMIN_EMAILS).
+  isAdmin: boolean;
 }
 
 export interface CustomFieldDef {

@@ -19,6 +19,14 @@ import Support from "./pages/Support";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Notifications from "./pages/Notifications";
+import AdminBlog from "./pages/admin/AdminBlog";
+import BlogEditor from "./pages/admin/BlogEditor";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import { BlogShell } from "@/components/BlogShell";
+import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +59,14 @@ const App = () => (
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
               <Route path="/about" element={<AppLayout><About /></AppLayout>} />
               <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+              <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
+              {/* Public for visitors, in-app for logged-in users. */}
+              <Route path="/blog" element={<BlogShell>{audience => <Blog audience={audience} />}</BlogShell>} />
+              <Route path="/blog/:slug" element={<BlogShell>{audience => <BlogPost audience={audience} />}</BlogShell>} />
+              <Route path="/admin/blog" element={<AppLayout><AdminRoute><AdminBlog /></AdminRoute></AppLayout>} />
+              <Route path="/admin/blog/new" element={<AppLayout><AdminRoute><BlogEditor /></AdminRoute></AppLayout>} />
+              <Route path="/admin/blog/:id/edit" element={<AppLayout><AdminRoute><BlogEditor /></AdminRoute></AppLayout>} />
+              <Route path="/admin/announcements" element={<AppLayout><AdminRoute><AdminAnnouncements /></AdminRoute></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

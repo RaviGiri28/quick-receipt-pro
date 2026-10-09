@@ -1,6 +1,9 @@
 import {
-  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark,
+  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, Newspaper, Bell, PenSquare, Megaphone,
+  type LucideIcon,
 } from 'lucide-react';
+import { useUnreadCount } from '@/hooks/use-notifications';
+import { badgeText } from '@/lib/blog';
 import { NavLink } from '@/components/NavLink';
 import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,14 +13,21 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, SidebarHeader, useSidebar,
 } from '@/components/ui/sidebar';
 
-const mainNav = [
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  badge?: number;
+}
+
+const mainNav: NavItem[] = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Create Receipt', url: '/create', icon: FilePlus },
   { title: 'Saved Receipts', url: '/saved', icon: Bookmark },
   { title: 'History', url: '/history', icon: History },
 ];
 
-const secondaryNav = [
+const secondaryNav: NavItem[] = [
   { title: 'Settings', url: '/settings', icon: Settings },
   { title: 'Profile', url: '/profile', icon: User },
   { title: 'About', url: '/about', icon: Info },
@@ -29,7 +39,12 @@ const linkClass =
 const activeClass =
   '!bg-white/[0.16] !text-white font-semibold shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] ring-1 ring-white/20 hover:!translate-x-0';
 
-function NavGroup({ label, items }: { label: string; items: typeof mainNav }) {
+const adminNav: NavItem[] = [
+  { title: 'Publish Blog', url: '/admin/blog', icon: PenSquare },
+  { title: 'Announcements', url: '/admin/announcements', icon: Megaphone },
+];
+
+function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   const { isMobile, setOpenMobile } = useSidebar();
   return (
     <SidebarGroup className="px-3">
@@ -50,6 +65,11 @@ function NavGroup({ label, items }: { label: string; items: typeof mainNav }) {
                 >
                   <item.icon className="!h-5 !w-5 transition-transform duration-300 group-hover/nav:scale-110" />
                   <span>{item.title}</span>
+                  {!!item.badge && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[11px] font-bold text-primary">
+                      {badgeText(item.badge)}
+                    </span>
+                  )}
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -61,8 +81,13 @@ function NavGroup({ label, items }: { label: string; items: typeof mainNav }) {
 }
 
 export function AppSidebar() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { data: unread = 0 } = useUnreadCount();
+  const updatesNav: NavItem[] = [
+    { title: 'Blog', url: '/blog', icon: Newspaper },
+    { title: 'Notifications', url: '/notifications', icon: Bell, badge: unread },
+  ];
 
   const handleLogout = () => {
     logout();
@@ -77,6 +102,8 @@ export function AppSidebar() {
       <div className="mx-5 h-px bg-white/15" />
       <SidebarContent className="gap-2 pt-4">
         <NavGroup label="Main" items={mainNav} />
+        <NavGroup label="Updates" items={updatesNav} />
+        {user?.isAdmin && <NavGroup label="Admin" items={adminNav} />}
         <NavGroup label="More" items={secondaryNav} />
       </SidebarContent>
       <SidebarFooter className="p-4">

@@ -5,6 +5,7 @@ import { receiptsApi, localIsoDate } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useCountUp } from '@/hooks/use-count-up';
 import { PrinterHero } from '@/components/PrinterHero';
+import { AnnouncementsPanel } from '@/components/AnnouncementsPanel';
 import { Button } from '@/components/ui/button';
 import {
   FilePlus, History, Star, IndianRupee, Clock, FileText, CalendarDays, CheckCircle2,
@@ -71,6 +72,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-10">
+
       {/* Hero */}
       <section className="relative grid items-center gap-6 lg:grid-cols-[1.1fr_1fr]">
         <div className="stagger space-y-5">
@@ -102,7 +104,7 @@ export default function Dashboard() {
           <PrinterHero business={business} note="Print on 58mm/80mm Thermal Printer" />
         </div>
       </section>
-
+      <AnnouncementsPanel />
       {/* Stats */}
       <section className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total Receipts" value={show(total)} icon={FileText} />

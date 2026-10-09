@@ -122,6 +122,7 @@ interface ApiUser {
   business_phone?: string;
   business_logo?: string | null;
   custom_field_defs?: CustomFieldDef[] | null;
+  is_admin?: boolean;
 }
 
 export const assetUrl = (path?: string | null) =>
@@ -140,6 +141,7 @@ export function userFromApi(u: ApiUser): UserProfile {
       logo: assetUrl(u.business_logo),
     },
     customFields: u.custom_field_defs ?? null,
+    isAdmin: !!u.is_admin,
   };
 }
 
@@ -366,4 +368,178 @@ export const receiptsApi = {
   // "Today" is the browser's date, so the count matches the user's day whatever the server's timezone.
   dashboard: async (today = localIsoDate()) =>
     (await request<{ stats: DashboardStats }>('GET', `/api/receipts/dashboard?today=${today}`)).stats,
+};
+
+// ---------------------------------------------------------------------------
+// Blog
+// ---------------------------------------------------------------------------
+
+export type BlogTag = 'feature' | 'update' | 'fix' | 'announcement' | 'guide';
+// public = website visitors only, users = logged-in users only, both = everyone.
+export type BlogVisibility = 'public' | 'users' | 'both';
+export type PublishStatus = 'draft' | 'published';
+
+export interface BlogPostSummary {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  tag: BlogTag;
+  cover_image: string | null;
+  published_at: string | null;
+  updated_at: string;
+  author_name: string | null;
+}
+
+export interface BlogPost extends BlogPostSummary {
+  content: string;
+}
+
+export interface AdminBlogPost extends BlogPostSummary {
+  content?: string;
+  visibility: BlogVisibility;
+  status: PublishStatus;
+  created_at: string;
+}
+
+export interface BlogPage {
+  posts: BlogPostSummary[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+// 'public' = what visitors see (no login); 'users' = the in-app blog.
+export type BlogAudience = 'public' | 'users';
+
+const blogBase = (audience: BlogAudience) => (audience === 'public' ? '/api/blog/public' : '/api/blog');
+
+export const blogApi = {
+  list: async (audience: BlogAudience, page = 1, tag?: BlogTag): Promise<BlogPage> => {
+    const params = new URLSearchParams({ page: String(page), limit: '12' });
+    if (tag) params.set('tag', tag);
+    const data = await request<{ posts: BlogPostSummary[]; pagination: { total: number; page: number; totalPages: number } }>(
+      'GET', `${blogBase(audience)}?${params}`,
+    );
+    return { posts: data.posts, ...data.pagination };
+  },
+
+  get: async (audience: BlogAudience, slug: string) =>
+    (await request<{ post: BlogPost }>('GET', `${blogBase(audience)}/${encodeURIComponent(slug)}`)).post,
+};
+
+// ---------------------------------------------------------------------------
+// Announcements
+// ---------------------------------------------------------------------------
+
+export type AnnouncementType = 'info' | 'update' | 'warning';
+
+export interface Announcement {
+  id: number;
+  title: string;
+  message: string;
+  type: AnnouncementType;
+  link_url: string | null;
+  link_label: string | null;
+  pinned: boolean;
+  published_at: string | null;
+  expires_at: string | null;
+}
+
+export interface AdminAnnouncement extends Announcement {
+  status: PublishStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementInput {
+  title: string;
+  message: string;
+  type: AnnouncementType;
+  link_url: string;
+  link_label: string;
+  pinned: boolean;
+  status: PublishStatus;
+  expires_at: string | null; // YYYY-MM-DD or null
+}
+
+export const announcementsApi = {
+  active: async () => (await request<{ announcements: Announcement[] }>('GET', '/api/announcements')).announcements,
+};
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export interface AppNotification {
+  type: 'blog' | 'announcement';
+  id: number;
+  title: string;
+  body: string;
+  slug?: string;
+  tag: string;
+  published_at: string;
+  read: boolean;
+  // Announcements only.
+  link_url?: string | null;
+  link_label?: string | null;
+}
+
+export const notificationsApi = {
+  list: async () => (await request<{ notifications: AppNotification[] }>('GET', '/api/notifications')).notifications,
+  unreadCount: async () => (await request<{ count: number }>('GET', '/api/notifications/unread-count')).count,
+  markRead: (type: AppNotification['type'], id: number) => request<unknown>('POST', '/api/notifications/read', { type, id }),
+  markAllRead: () => request<unknown>('POST', '/api/notifications/read-all'),
+};
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
+export interface BlogPostInput {
+  title: string;
+  summary: string;
+  content: string;
+  tag: BlogTag;
+  visibility: BlogVisibility;
+  status: PublishStatus;
+  cover?: File | null;
+  removeCover?: boolean;
+}
+
+function blogForm(data: BlogPostInput) {
+  const form = new FormData();
+  form.append('title', data.title);
+  form.append('summary', data.summary);
+  form.append('content', data.content);
+  form.append('tag', data.tag);
+  form.append('visibility', data.visibility);
+  form.append('status', data.status);
+  if (data.cover) form.append('cover', data.cover);
+  else if (data.removeCover) form.append('remove_cover', 'true');
+  return form;
+}
+
+export const adminApi = {
+  listPosts: async () => (await request<{ posts: AdminBlogPost[] }>('GET', '/api/admin/blog')).posts,
+  getPost: async (id: number) => (await request<{ post: AdminBlogPost }>('GET', `/api/admin/blog/${id}`)).post,
+  createPost: async (data: BlogPostInput) =>
+    (await request<{ post: AdminBlogPost }>('POST', '/api/admin/blog', blogForm(data))).post,
+  updatePost: async (id: number, data: BlogPostInput) =>
+    (await request<{ post: AdminBlogPost }>('PUT', `/api/admin/blog/${id}`, blogForm(data))).post,
+  deletePost: (id: number) => request<unknown>('DELETE', `/api/admin/blog/${id}`),
+  // Uploads an image for use inside a post's body; returns its URL.
+  uploadImage: async (file: File) => {
+    const form = new FormData();
+    form.append('image', file);
+    return (await request<{ url: string }>('POST', '/api/admin/blog/images', form)).url;
+  },
+
+  listAnnouncements: async () =>
+    (await request<{ announcements: AdminAnnouncement[] }>('GET', '/api/admin/announcements')).announcements,
+  createAnnouncement: async (data: AnnouncementInput) =>
+    (await request<{ announcement: AdminAnnouncement }>('POST', '/api/admin/announcements', data)).announcement,
+  updateAnnouncement: async (id: number, data: AnnouncementInput) =>
+    (await request<{ announcement: AdminAnnouncement }>('PUT', `/api/admin/announcements/${id}`, data)).announcement,
+  deleteAnnouncement: (id: number) => request<unknown>('DELETE', `/api/admin/announcements/${id}`),
 };

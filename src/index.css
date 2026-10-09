@@ -218,6 +218,16 @@
   animation: fade-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Notification bell: one short swing when there are unread notifications. */
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+
 /* Landing page scroll reveal. */
 .reveal {
   opacity: 0;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -142,6 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <NotificationBell />
               <UserMenu />
             </div>
           </header>
