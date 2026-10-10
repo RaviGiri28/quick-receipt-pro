@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useQuery } from '@tanstack/react-query';
 import { Megaphone } from 'lucide-react';
 import { announcementsApi } from '@/lib/api';
@@ -38,6 +39,7 @@ export function AnnouncementsPanel() {
     setDismissed(next);
     saveDismissed(next);
     markRead.mutate({ type: 'announcement', id });
+    trackEvent('announcement_dismiss');
   };
 
   return (

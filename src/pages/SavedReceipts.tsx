@@ -1,6 +1,6 @@
 import { formatInr } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
@@ -19,6 +22,7 @@ import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-quer
 import { receiptsApi, errorMessage } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 import { getSettings } from '@/lib/storage';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ReceiptData } from '@/types/receipt';
@@ -30,16 +34,21 @@ export default function SavedReceipts() {
   const { toast } = useToast();
   const business = useBusinessInfo();
 
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  // The dashboard's Pending Receipts card links here with ?status=pending.
+  const [status, setStatus] = useState<'all' | 'success' | 'pending'>(
+    searchParams.get('status') === 'pending' ? 'pending' : 'all',
+  );
   const [page, setPage] = useState(1);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [printDual, setPrintDual] = useState(false);
   const [printingId, setPrintingId] = useState<string | null>(null);
   const debouncedSearch = useDebounce(search);
 
-  useEffect(() => setPage(1), [debouncedSearch]);
+  useEffect(() => setPage(1), [debouncedSearch, status]);
 
-  const filters = { type: 'saved' as const, search: debouncedSearch };
+  const filters = { type: 'saved' as const, search: debouncedSearch, status: status === 'all' ? undefined : status };
   const { data, isLoading, error } = useQuery({
     queryKey: ['receipts', 'list', filters, page],
     queryFn: () => receiptsApi.list(filters, page),
@@ -53,7 +62,7 @@ export default function SavedReceipts() {
   };
 
   // Prints with this device's dual-receipt setting and marks the receipt as printed,
-  // which moves it from Saved Receipts to History only.
+  // which moves a Success receipt from Saved Receipts to History only (Pending ones stay saved).
   const handlePrint = async (r: ReceiptData) => {
     const dual = getSettings().dualReceipt;
     setPrintingId(r.id);
@@ -68,6 +77,7 @@ export default function SavedReceipts() {
     } finally {
       setPrintingId(null);
     }
+    trackEvent('receipt_printed', { source: 'saved', dual });
     setTimeout(() => window.print(), 300);
   };
 
@@ -76,13 +86,13 @@ export default function SavedReceipts() {
       <PageHeader
         icon={Bookmark}
         title="Saved Receipts"
-        description="Receipts you saved for later. Print one to move it to History."
+        description="Receipts you saved for later. Printing a Success receipt moves it to History."
         actions={<Button onClick={() => navigate('/create')}><FilePlus /> New Receipt</Button>}
       />
 
       <Card>
-        <CardContent className="p-4 sm:p-5">
-          <div className="relative max-w-md">
+        <CardContent className="flex flex-wrap items-center gap-3 p-4 sm:p-5">
+          <div className="relative min-w-0 max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-10"
@@ -91,6 +101,14 @@ export default function SavedReceipts() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          <Select value={status} onValueChange={(v: 'all' | 'success' | 'pending') => setStatus(v)}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="success">✅ Success</SelectItem>
+              <SelectItem value="pending">⏳ Pending</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

@@ -22,11 +22,14 @@ import NotFound from "./pages/NotFound";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Notifications from "./pages/Notifications";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import AdminBlog from "./pages/admin/AdminBlog";
 import BlogEditor from "./pages/admin/BlogEditor";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
-import { BlogShell } from "@/components/BlogShell";
+import { BlogShell, PublicShell } from "@/components/BlogShell";
 import { AdminRoute } from "@/components/AdminRoute";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +48,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <AnalyticsTracker />
             <Routes>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/landing" element={<Landing />} />
@@ -61,6 +65,8 @@ const App = () => (
               <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
               <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
               {/* Public for visitors, in-app for logged-in users. */}
+              <Route path="/privacy" element={<PublicShell>{() => <PrivacyPolicy />}</PublicShell>} />
+              <Route path="/terms" element={<PublicShell>{() => <Terms />}</PublicShell>} />
               <Route path="/blog" element={<BlogShell>{audience => <Blog audience={audience} />}</BlogShell>} />
               <Route path="/blog/:slug" element={<BlogShell>{audience => <BlogPost audience={audience} />}</BlogShell>} />
               <Route path="/admin/blog" element={<AppLayout><AdminRoute><AdminBlog /></AdminRoute></AppLayout>} />

@@ -11,7 +11,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, Moon, Printer, ShieldCheck, Sun, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { errorMessage } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
+import { ApiError, errorMessage } from '@/lib/api';
+import { LegalLinks } from '@/components/SiteFooter';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { SUPPORT_EMAIL } from '@/lib/config';
 
 const highlights = [
@@ -22,7 +28,7 @@ const highlights = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user, login, restoreAccount } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -30,6 +36,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Set when the account was deleted but can still be restored (until this date).
+  const [restorableUntil, setRestorableUntil] = useState<string | null>(null);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -38,13 +46,36 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password, remember);
+      trackEvent('login', { method: 'email' });
       navigate('/');
     } catch (err) {
-      toast({ title: 'Login failed', description: errorMessage(err), variant: 'destructive' });
+      if (err instanceof ApiError && err.code === 'ACCOUNT_DELETION_PENDING') {
+        setRestorableUntil(String(err.data?.delete_on || ''));
+      } else {
+        toast({ title: 'Login failed', description: errorMessage(err), variant: 'destructive' });
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleRestore = async () => {
+    setSubmitting(true);
+    try {
+      await restoreAccount(email, password, remember);
+      toast({ title: 'Account restored', description: 'Welcome back! Your account and receipts are safe.' });
+      navigate('/');
+    } catch (err) {
+      toast({ title: 'Could not restore account', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+      setRestorableUntil(null);
+    }
+  };
+
+  const restoreDeadline = restorableUntil && !Number.isNaN(Date.parse(restorableUntil))
+    ? new Date(restorableUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-canvas">
@@ -152,8 +183,27 @@ export default function LoginPage() {
               </p>
             </form>
           </div>
+          <LegalLinks className="mt-5 text-muted-foreground" />
         </div>
       </div>
+
+      <AlertDialog open={restorableUntil !== null} onOpenChange={open => { if (!open) setRestorableUntil(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This account was deleted and will be permanently erased{restoreDeadline ? ` on ${restoreDeadline}` : ' soon'}.
+              Restore it to keep your account and all your receipts.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Not now</AlertDialogCancel>
+            <AlertDialogAction onClick={e => { e.preventDefault(); handleRestore(); }} disabled={submitting}>
+              {submitting ? 'Restoring…' : 'Restore account'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

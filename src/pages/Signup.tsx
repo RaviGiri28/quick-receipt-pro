@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { IconInput } from '@/components/IconInput';
 import { PrinterHero } from '@/components/PrinterHero';
 import { PublicNav } from '@/components/PublicNav';
@@ -12,7 +13,9 @@ import {
   Eye, EyeOff, Upload, User, Mail, Lock, Store, MapPin, Phone, Smartphone, UserPlus, Rocket, Zap, ShieldCheck, Printer,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 import { errorMessage } from '@/lib/api';
+import { TERMS_VERSION } from '@/lib/legal';
 
 const perks = [
   { icon: Zap, title: 'Fast & Easy Setup', desc: 'Get started in just a few minutes.' },
@@ -42,6 +45,7 @@ export default function SignupPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -72,9 +76,14 @@ export default function SignupPage() {
       toast({ title: 'Weak password', description: 'Password must be at least 6 characters.', variant: 'destructive' });
       return;
     }
+    if (!acceptedTerms) {
+      toast({ title: 'Required', description: 'Please accept the Terms & Conditions and Privacy Policy.', variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
     try {
-      await signup({ ...form, logo: logoFile });
+      await signup({ ...form, logo: logoFile, acceptedTermsVersion: TERMS_VERSION });
+      trackEvent('sign_up', { method: 'email' });
       toast({ title: '✅ Account created successfully', description: 'Please login to enter Quick Receipt.' });
       navigate('/login');
     } catch (err) {
@@ -101,7 +110,7 @@ export default function SignupPage() {
         {/* Brand side */}
         <div className="hidden lg:block lg:pt-8">
           <div className="stagger space-y-5">
-            <span className="chip w-fit text-primary"><Rocket className="h-4 w-4" /> Join Thousands of Happy Businesses</span>
+            <span className="chip w-fit text-primary"><Rocket className="h-4 w-4" /> Built for Indian Retailers</span>
             <h1 className="text-4xl font-extrabold leading-[1.1] text-navy xl:text-5xl">
               Create Your Account
               <span className="block text-gradient">and Start Generating Receipts Today!</span>
@@ -183,7 +192,16 @@ export default function SignupPage() {
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
               </label>
             </div>
-            <Button type="submit" className="h-12 w-full text-base" disabled={submitting}>
+            <label htmlFor="acceptTerms" className="flex cursor-pointer items-start gap-3 rounded-xl border bg-accent/40 p-3.5 text-sm">
+              <Checkbox id="acceptTerms" checked={acceptedTerms} onCheckedChange={v => setAcceptedTerms(!!v)} className="mt-0.5 h-5 w-5 rounded-md" />
+              <span className="text-muted-foreground">
+                I agree to the{' '}
+                <Link to="/terms" target="_blank" className="font-semibold text-primary hover:underline">Terms &amp; Conditions</Link> and{' '}
+                <Link to="/privacy" target="_blank" className="font-semibold text-primary hover:underline">Privacy Policy</Link>,
+                and I confirm I will only enter customer details I have permission to use.
+              </span>
+            </label>
+            <Button type="submit" className="h-12 w-full text-base" disabled={submitting || !acceptedTerms}>
               {submitting ? (
                 <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Creating account…</>
               ) : (

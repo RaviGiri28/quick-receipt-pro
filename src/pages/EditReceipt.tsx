@@ -23,6 +23,7 @@ import {
   Building2, StickyNote, Smartphone, Tag, Copy, type LucideIcon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 type TextField = 'accountHolder' | 'accountNumber' | 'ifscCode' | 'amount' | 'date'
   | 'transactionId' | 'referenceNumber' | 'bankName' | 'notes';
@@ -34,7 +35,7 @@ const editableFields: { key: TextField; label: string; maxLength?: number }[] = 
   { key: 'ifscCode', label: 'IFSC Code', maxLength: 20 },
   { key: 'amount', label: 'Amount (₹) *' },
   { key: 'date', label: 'Date (DD/MM/YYYY) *' },
-  { key: 'transactionId', label: 'Transaction ID *', maxLength: 100 },
+  { key: 'transactionId', label: 'Transaction ID', maxLength: 100 },
   { key: 'referenceNumber', label: 'Reference No', maxLength: 100 },
   { key: 'bankName', label: 'Bank Name *', maxLength: 100 },
   { key: 'notes', label: 'Notes', maxLength: 1000 },
@@ -69,7 +70,7 @@ export default function EditReceipt() {
     if (!loaded) return;
     setReceipt(loaded);
     // Reprint the way it was printed before; otherwise use this device's default.
-    setDualReceipt(loaded.saveType === 'printed' ? !!loaded.isDualPrint : getSettings().dualReceipt);
+    setDualReceipt(loaded.isPrinted ? !!loaded.isDualPrint : getSettings().dualReceipt);
   }, [loaded]);
 
   useEffect(() => {
@@ -99,7 +100,8 @@ export default function EditReceipt() {
     setReceipt(prev => prev ? { ...prev, customFields: { ...(prev.customFields || {}), [fieldId]: value } } : prev);
   };
 
-  // Saves the edits; printing also marks the receipt as printed (it leaves Saved Receipts).
+  // Saves the edits without moving the receipt between lists. Printing adds it to History;
+  // a Success one also leaves Saved Receipts, a Pending one stays in both.
   const save = async (print: boolean): Promise<boolean> => {
     const problem = validateReceipt(receipt);
     if (problem) {
@@ -110,12 +112,13 @@ export default function EditReceipt() {
     try {
       const updated = await receiptsApi.update(
         receipt.id,
-        print ? { ...receipt, saveType: 'printed', isDualPrint: dualReceipt } : receipt,
+        print ? { ...receipt, saveType: 'printed', isDualPrint: dualReceipt } : { ...receipt, saveType: undefined },
       );
       setReceipt(updated);
       queryClient.invalidateQueries({ queryKey: ['receipts'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast({ title: print ? 'Receipt saved & printing' : 'Receipt updated', description: 'Changes saved successfully.' });
+      trackEvent(print ? 'receipt_printed' : 'receipt_saved', print ? { source: 'edit', dual: dualReceipt } : { source: 'edit' });
       return true;
     } catch (err) {
       toast({ title: 'Could not save changes', description: errorMessage(err), variant: 'destructive' });

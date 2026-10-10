@@ -6,6 +6,7 @@ import {
   ApiError, ProfileUpdate, SignupData,
 } from '@/lib/api';
 import { getSettings, saveSettings } from '@/lib/storage';
+import { TERMS_VERSION } from '@/lib/legal';
 
 // Custom field definitions used to be kept per browser. If the account has never
 // stored any, upload this browser's ones so receipts keep showing their values.
@@ -37,6 +38,11 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (data: ProfileUpdate) => Promise<void>;
   updateCustomFields: (defs: CustomFieldDef[]) => Promise<void>;
+  acceptTerms: () => Promise<void>;
+  // Cancels a pending account deletion and logs in.
+  restoreAccount: (email: string, password: string, remember: boolean) => Promise<void>;
+  // Starts the deletion (recovery period) and logs out; returns when it will be erased.
+  deleteAccount: (password: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -83,8 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession();
   }, [restoreSession]);
 
-  const login = async (email: string, password: string, remember: boolean) => {
-    const { token } = await authApi.login(email, password);
+  const startSession = async (token: string, remember: boolean) => {
     setToken(token, remember);
     setSessionError(null);
     queryClient.clear();
@@ -95,6 +100,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearToken();
       throw err;
     }
+  };
+
+  const login = async (email: string, password: string, remember: boolean) => {
+    const { token } = await authApi.login(email, password);
+    await startSession(token, remember);
+  };
+
+  const restoreAccount = async (email: string, password: string, remember: boolean) => {
+    const { token } = await authApi.restoreAccount(email, password);
+    await startSession(token, remember);
+  };
+
+  const acceptTerms = async () => {
+    await authApi.acceptTerms(TERMS_VERSION);
+    setUser(prev => (prev ? { ...prev, termsAccepted: true } : prev));
+  };
+
+  const deleteAccount = async (password: string) => {
+    const deleteOn = await authApi.deleteAccount(password);
+    logout();
+    return deleteOn;
   };
 
   const signup = async (data: SignupData) => {
@@ -112,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );
@@ -133,6 +159,9 @@ export function useAuth() {
       logout: () => {},
       updateProfile: async () => {},
       updateCustomFields: async () => {},
+      acceptTerms: async () => {},
+      restoreAccount: async () => {},
+      deleteAccount: async () => '',
     } as AuthContextType;
   }
   return ctx;

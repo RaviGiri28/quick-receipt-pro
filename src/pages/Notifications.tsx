@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Megaphone, Newspaper } from 'lucide-react';
@@ -73,6 +74,7 @@ export default function NotificationsPage() {
   );
 
   const open = (n: AppNotification) => {
+    trackEvent('notification_open', { type: n.type, from: 'page' });
     if (!n.read) markRead.mutate({ type: n.type, id: n.id });
     if (n.type === 'blog' && n.slug) navigate(`/blog/${n.slug}`);
   };

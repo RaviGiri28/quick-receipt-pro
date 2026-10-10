@@ -7,6 +7,7 @@ import { formatPostDate, readingMinutes } from '@/lib/blog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMarkRead } from '@/hooks/use-notifications';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 import { Markdown } from '@/components/Markdown';
 import { TagBadge } from '@/components/TagBadge';
 import { EmptyState, Spinner } from '@/components/EmptyState';
@@ -27,6 +28,13 @@ export default function BlogPostPage({ audience }: { audience: BlogAudience }) {
   useEffect(() => {
     if (post && audience === 'users') markRead({ type: 'blog', id: post.id });
   }, [post, audience, markRead]);
+
+  const viewedId = post?.id;
+  useEffect(() => {
+    if (post) trackEvent('blog_post_view', { slug: post.slug, tag: post.tag, audience });
+    // Once per post opened, not on every refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewedId, audience]);
 
   useEffect(() => {
     if (post) document.title = `${post.title} · Quick Receipt Blog`;

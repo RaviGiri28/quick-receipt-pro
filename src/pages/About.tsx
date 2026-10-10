@@ -41,7 +41,7 @@ const sections = [
   {
     icon: Eye,
     title: 'Our Commitment',
-    content: 'We are committed to maintaining the highest standards of data security, user privacy, and platform performance. Your business data stays on your device, always.',
+    content: 'We are committed to maintaining the highest standards of data security, user privacy, and platform performance. Your receipts are stored securely on our servers, encrypted in transit, available only through your account, and never sold or shared.',
   },
   {
     icon: Sparkles,
@@ -101,7 +101,7 @@ export default function AboutPage() {
         <div className="relative space-y-4">
           <h2 className="text-2xl font-extrabold sm:text-3xl">Ready to Get Started?</h2>
           <p className="mx-auto max-w-md text-primary-foreground/80">
-            Join thousands of Indian retailers who trust Quick Receipt for professional transaction management.
+            Start creating professional receipts for your money transfer business today.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button onClick={() => navigate('/create')} variant="secondary" size="lg">

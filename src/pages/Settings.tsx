@@ -14,8 +14,9 @@ import { IconInput } from '@/components/IconInput';
 import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { useBusinessInfo } from '@/hooks/use-business-info';
+import { analyticsConfigured, isAnalyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import {
-  Save, Plus, Trash2, Settings as SettingsIcon, Eye, Store, FileText, Copy, Palette, Tag, type LucideIcon,
+  Save, Plus, Trash2, Settings as SettingsIcon, Eye, Store, FileText, Copy, Palette, Tag, BarChart3, ShieldCheck, type LucideIcon,
 } from 'lucide-react';
 
 const MAX_CUSTOM_FIELDS = 20;
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [customFields, setCustomFields] = useState<CustomFieldDef[]>(user?.customFields || []);
   const [saving, setSaving] = useState(false);
+  const [shareUsage, setShareUsage] = useState(() => !isAnalyticsOptedOut());
   const business = useBusinessInfo();
 
   const handleSave = async () => {
@@ -205,6 +207,26 @@ export default function SettingsPage() {
               ))}
             </div>
           </FormSection>
+
+          {analyticsConfigured && (
+            <FormSection icon={ShieldCheck} title="Privacy" description="Applies to this device straight away">
+              <label htmlFor="shareUsage" className="group flex cursor-pointer items-center gap-4">
+                <span className="icon-tile icon-tile-pop h-10 w-10 bg-transparent text-navy/70"><BarChart3 className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-navy">Share anonymous usage statistics</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Helps us see which features are used. Never includes receipt details, customer data or amounts.
+                  </span>
+                </span>
+                <Switch
+                  id="shareUsage"
+                  checked={shareUsage}
+                  onCheckedChange={v => { setShareUsage(v); setAnalyticsOptOut(!v); }}
+                  className="scale-110"
+                />
+              </label>
+            </FormSection>
+          )}
 
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving} size="lg">

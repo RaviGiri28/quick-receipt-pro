@@ -11,6 +11,7 @@ export interface ReceiptData {
   serialNumber: number;
   createdAt: string;
   saveType?: 'printed' | 'saved';
+  isPrinted?: boolean; // printed at least once (listed in History)
   isDualPrint?: boolean;
   notes: string;
   bankName?: string;
@@ -42,6 +43,8 @@ export interface UserProfile {
   customFields: CustomFieldDef[] | null;
   // Can publish blog posts and announcements (set by the server from ADMIN_EMAILS).
   isAdmin: boolean;
+  // Has accepted the current Terms and Privacy Policy.
+  termsAccepted: boolean;
 }
 
 export interface CustomFieldDef {

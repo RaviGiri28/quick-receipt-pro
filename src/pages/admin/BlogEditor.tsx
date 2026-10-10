@@ -10,6 +10,7 @@ import {
 } from '@/lib/api';
 import { BLOG_TAGS, VISIBILITY_OPTIONS, formatPostDate } from '@/lib/blog';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 import { PageHeader } from '@/components/PageHeader';
 import { FormSection, Field } from '@/components/FormSection';
 import { Markdown } from '@/components/Markdown';
@@ -212,6 +213,7 @@ export default function BlogEditorPage() {
       queryClient.invalidateQueries({ queryKey: ['blog-post'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       const wasLive = post?.status === 'published';
+      if (status === 'published' && !wasLive) trackEvent('blog_publish', { tag: saved.tag, visibility: saved.visibility });
       toast({
         title: status === 'draft' ? (wasLive ? 'Post unpublished' : 'Draft saved') : wasLive ? 'Post updated' : 'Post published 🎉',
         description: status === 'published' && !wasLive && saved.visibility !== 'public' ? 'Users will see it in their notifications.' : undefined,

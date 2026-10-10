@@ -12,6 +12,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, SidebarHeader, useSidebar,
 } from '@/components/ui/sidebar';
+import { LegalLinks } from '@/components/SiteFooter';
 
 interface NavItem {
   title: string;
@@ -106,10 +107,11 @@ export function AppSidebar() {
         {user?.isAdmin && <NavGroup label="Admin" items={adminNav} />}
         <NavGroup label="More" items={secondaryNav} />
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="gap-3 p-4">
+        <LegalLinks className="text-white/60 [&_a:hover]:text-white" />
         <button
           onClick={handleLogout}
-          className="group/nav flex h-11 w-full items-center gap-3 rounded-xl px-3.5 text-[0.95rem] font-medium text-white/80 transition-all duration-200 hover:bg-white/10 hover:text-white"
+          className="group/nav flex h-11 w-full items-center gap-3 rounded-xl px-3.5 text-[0.95rem] font-semibold text-white bg-red-600 shadow-sm transition-all duration-200 hover:bg-red-700 active:bg-red-800"
         >
           <LogOut className="h-5 w-5 transition-transform duration-300 group-hover/nav:-translate-x-0.5" />
           <span>Logout</span>

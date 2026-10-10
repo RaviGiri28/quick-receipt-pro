@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Megaphone, Newspaper } from 'lucide-react';
@@ -48,6 +49,7 @@ export function NotificationBell() {
   const markAllRead = useMarkAllRead();
 
   const openItem = (n: AppNotification) => {
+    trackEvent('notification_open', { type: n.type, from: 'bell' });
     if (!n.read) markRead.mutate({ type: n.type, id: n.id });
     setOpen(false);
     navigate(notificationHref(n));

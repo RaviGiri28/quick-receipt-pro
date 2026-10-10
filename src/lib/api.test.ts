@@ -44,6 +44,7 @@ describe('receipt mapping', () => {
     is_dual_print: true,
     serial_number: 3,
     save_type: 'printed' as const,
+    is_printed: true,
     created_at: '2026-10-05T10:00:00.000Z',
   };
 
@@ -57,6 +58,7 @@ describe('receipt mapping', () => {
       ifscCode: '',
       referenceNumber: '',
       serialNumber: 3,
+      isPrinted: true,
       customFields: { cf_1: 'Branch A' },
     });
   });

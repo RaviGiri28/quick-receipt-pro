@@ -6,8 +6,12 @@ export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const TOKEN_KEY = 'qr_token';
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  // `data` is the full error response body (some errors carry a `code` and details).
+  constructor(message: string, public status: number, public data: Record<string, unknown> | null = null) {
     super(message);
+  }
+  get code(): string | undefined {
+    return typeof this.data?.code === 'string' ? this.data.code : undefined;
   }
 }
 
@@ -72,7 +76,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && token) onUnauthorized?.();
-    throw new ApiError(data?.message || `Request failed (${res.status})`, res.status);
+    throw new ApiError(data?.message || `Request failed (${res.status})`, res.status, data);
   }
   return data as T;
 }
@@ -123,6 +127,8 @@ interface ApiUser {
   business_logo?: string | null;
   custom_field_defs?: CustomFieldDef[] | null;
   is_admin?: boolean;
+  terms_version?: string | null;
+  terms_current?: string;
 }
 
 export const assetUrl = (path?: string | null) =>
@@ -142,6 +148,8 @@ export function userFromApi(u: ApiUser): UserProfile {
     },
     customFields: u.custom_field_defs ?? null,
     isAdmin: !!u.is_admin,
+    // Only the profile endpoint reports these; elsewhere the user counts as up to date.
+    termsAccepted: u.terms_current === undefined || u.terms_version === u.terms_current,
   };
 }
 
@@ -154,6 +162,7 @@ export interface SignupData {
   businessAddress: string;
   businessPhone: string;
   logo?: File | null;
+  acceptedTermsVersion: string;
 }
 
 export interface ProfileUpdate {
@@ -179,8 +188,20 @@ export const authApi = {
     form.append('business_address', data.businessAddress);
     form.append('business_phone', data.businessPhone);
     if (data.logo) form.append('business_logo', data.logo);
+    form.append('accept_terms', 'true');
+    form.append('terms_version', data.acceptedTermsVersion);
     return request<{ userId: number }>('POST', '/api/auth/register', form);
   },
+
+  acceptTerms: (version: string) =>
+    request<{ terms_version: string }>('POST', '/api/auth/accept-terms', { terms_version: version }),
+
+  // Starts the recovery period and ends every session; returns when it will be erased.
+  deleteAccount: async (password: string) =>
+    (await request<{ delete_on: string }>('DELETE', '/api/auth/account', { password })).delete_on,
+
+  restoreAccount: (email: string, password: string) =>
+    request<{ token: string }>('POST', '/api/auth/restore-account', { email, password }),
 
   profile: async () => userFromApi((await request<{ user: ApiUser }>('GET', '/api/auth/profile')).user),
 
@@ -248,6 +269,7 @@ interface ApiReceipt {
   is_dual_print: boolean;
   serial_number: number | null;
   save_type: 'printed' | 'saved';
+  is_printed: boolean;
   created_at: string;
 }
 
@@ -269,6 +291,7 @@ export function receiptFromApi(r: ApiReceipt): ReceiptData {
     isDualPrint: !!r.is_dual_print,
     serialNumber: r.serial_number || 0,
     saveType: r.save_type,
+    isPrinted: !!r.is_printed,
     createdAt: r.created_at,
   };
 }

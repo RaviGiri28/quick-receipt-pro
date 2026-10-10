@@ -110,7 +110,7 @@ export default function Dashboard() {
         <StatCard title="Total Receipts" value={show(total)} icon={FileText} />
         <StatCard title="Today's Receipts" value={show(todays)} icon={CalendarDays} />
         <StatCard title="Total Amount" value={show(amount, n => formatInr(Math.round(n)))} icon={IndianRupee} />
-        <StatCard title="Pending Receipts" value={show(pending)} icon={Clock} onClick={() => navigate('/history?status=pending')} />
+        <StatCard title="Pending Receipts" value={show(pending)} icon={Clock} onClick={() => navigate('/saved?status=pending')} />
       </section>
 
       {/* Key features and quick actions */}

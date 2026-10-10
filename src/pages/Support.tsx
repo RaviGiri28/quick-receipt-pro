@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/contexts/AuthContext';
 import { supportApi, errorMessage } from '@/lib/api';
 import { SUPPORT_EMAIL } from '@/lib/config';
@@ -28,6 +29,7 @@ export default function SupportPage() {
     setSending(true);
     try {
       const { ticketId } = await supportApi.send(form);
+      trackEvent('support_message_sent');
       toast({ title: 'Message sent', description: `Ticket #${ticketId} created. We'll reply to ${form.email.trim()} soon.` });
       setForm(prev => ({ ...prev, subject: '', message: '' }));
     } catch (err) {

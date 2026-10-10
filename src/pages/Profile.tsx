@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { FormSection, Field } from '@/components/FormSection';
 import { IconInput } from '@/components/IconInput';
 import { LogoMark } from '@/components/brand/Logo';
+import { AccountDataSection } from '@/components/AccountDataSection';
 import {
   KeyRound, Save, Upload, User, UserCircle, Mail, Phone, Store, MapPin, Building2, Lock, Eye, EyeOff, ShieldCheck,
 } from 'lucide-react';
@@ -144,6 +145,8 @@ export default function ProfilePage() {
               </Button>
             </form>
           </FormSection>
+
+          <AccountDataSection />
         </div>
 
         <div className="stagger space-y-6">

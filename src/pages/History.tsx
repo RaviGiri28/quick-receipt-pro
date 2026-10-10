@@ -27,6 +27,7 @@ import { exportToExcel } from '@/lib/excel';
 import { ReceiptData } from '@/types/receipt';
 import { Search, Download, Eye, FileSpreadsheet, Calendar, Pencil, FileX, FilePlus, History as HistoryIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 export default function HistoryPage() {
   const { toast } = useToast();
@@ -48,6 +49,7 @@ export default function HistoryPage() {
 
   const debouncedSearch = useDebounce(search);
   const filters: ReceiptFilters = {
+    type: 'printed',
     search: debouncedSearch,
     status: status === 'all' ? undefined : status,
     dateFrom: dateFrom || undefined,
@@ -86,6 +88,7 @@ export default function HistoryPage() {
       }
       exportToExcel(rows, `receipts-${dateFrom || 'all'}-to-${dateTo || 'now'}`, customFieldDefs);
       toast({ title: 'Exported', description: `${rows.length} receipts exported.` });
+      trackEvent('excel_export', { rows: rows.length });
     } catch (err) {
       toast({ title: 'Export failed', description: errorMessage(err), variant: 'destructive' });
     } finally {

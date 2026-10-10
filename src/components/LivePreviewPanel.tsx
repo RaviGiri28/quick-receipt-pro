@@ -5,13 +5,15 @@ interface LivePreviewPanelProps {
   title?: string;
   subtitle?: string;
   className?: string;
+  /** Replaces the default thermal-printer note under the receipt. */
+  footer?: React.ReactNode;
   /** The receipt(s), usually wrapped in a `.print-area`. */
   children: React.ReactNode;
 }
 
 // Sticky card that frames on-screen receipts. Every wrapper is `print-static` so
 // printing lays out the receipt exactly as it did without this frame.
-export function LivePreviewPanel({ title = 'Live Preview', subtitle, className, children }: LivePreviewPanelProps) {
+export function LivePreviewPanel({ title = 'Live Preview', subtitle, className, footer, children }: LivePreviewPanelProps) {
   return (
     <div className={cn('print-static card-soft overflow-hidden p-4 sm:p-5 lg:sticky lg:top-24', className)}>
       <div className="mb-4 flex items-center gap-3 no-print">
@@ -31,10 +33,14 @@ export function LivePreviewPanel({ title = 'Live Preview', subtitle, className, 
           {children}
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-center gap-2 rounded-full border border-primary/15 bg-accent/60 px-4 py-2.5 text-xs font-semibold text-primary no-print">
-        <Printer className="h-4 w-4" /> Print on 58mm / 80mm Thermal Printer
-        <Info className="h-3.5 w-3.5 opacity-70" />
-      </div>
+      {footer ? (
+        <div className="mt-4 no-print">{footer}</div>
+      ) : (
+        <div className="mt-4 flex items-center justify-center gap-2 rounded-full border border-primary/15 bg-accent/60 px-4 py-2.5 text-xs font-semibold text-primary no-print">
+          <Printer className="h-4 w-4" /> Print on 58mm / 80mm Thermal Printer
+          <Info className="h-3.5 w-3.5 opacity-70" />
+        </div>
+      )}
     </div>
   );
 }

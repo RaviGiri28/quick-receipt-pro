@@ -21,7 +21,6 @@ export function validateReceipt(r: Partial<ReceiptData>): string | null {
     ['accountHolder', 'Account holder'],
     ['accountNumber', 'Account number'],
     ['amount', 'Amount'],
-    ['transactionId', 'Transaction ID'],
     ['bankName', 'Bank name'],
     ['customerMobile', 'Customer mobile'],
   ];

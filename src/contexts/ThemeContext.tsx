@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 type Theme = 'light' | 'dark';
 
@@ -21,7 +22,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('qr_theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    trackEvent('theme_change', { theme: next });
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

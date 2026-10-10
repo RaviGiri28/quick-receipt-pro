@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { PublicNav } from '@/components/PublicNav';
 import { PrinterHero } from '@/components/PrinterHero';
-import { Logo } from '@/components/brand/Logo';
+import { SiteFooter } from '@/components/SiteFooter';
 import {
   Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck,
 } from 'lucide-react';
@@ -199,7 +199,7 @@ export default function Landing() {
           <div className="relative">
             <h2 className="text-3xl font-extrabold sm:text-4xl">Ready to Get Started?</h2>
             <p className="mx-auto mt-3 max-w-xl text-white/80 sm:text-lg">
-              Join thousands of Indian retailers who trust Quick Receipt for their daily transactions.
+              Create professional receipts for your daily transactions in seconds. Free to get started.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Button size="lg" onClick={() => navigate('/signup')} className="group h-14 bg-white px-8 text-lg text-primary shadow-xl hover:bg-white/90">
@@ -213,12 +213,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border/60 px-4 py-8 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
-          <Logo markClassName="h-8 w-8" textClassName="text-lg" />
-          <p>© {new Date().getFullYear()} Quick Receipt. Built for Indian retailers.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

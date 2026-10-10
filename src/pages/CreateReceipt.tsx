@@ -1,5 +1,5 @@
 import { formatInr } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,7 @@ import { FormSection, Field } from '@/components/FormSection';
 import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { parseTransactionText } from '@/lib/receiptParser';
+import { bankNameFromIfsc } from '@/lib/ifsc';
 import { getSettings } from '@/lib/storage';
 import { receiptsApi, errorMessage } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
@@ -24,9 +25,10 @@ import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateRecei
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import {
   Printer, Save, RotateCcw, ClipboardPaste, Sparkles, FileText, User, CreditCard, Landmark, IndianRupee,
-  CalendarDays, Hash, Search, Building2, UserRound, Smartphone, StickyNote, Tag, Copy, ArrowRight,
+  CalendarDays, Building2, UserRound, Smartphone, StickyNote, Tag, Copy, ArrowRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 const todayDate = () => new Date().toLocaleDateString('en-IN');
 
@@ -45,7 +47,7 @@ export default function CreateReceipt() {
   const [pasteText, setPasteText] = useState('');
   const [dualReceipt, setDualReceipt] = useState(settings.dualReceipt);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
-  const [status, setStatus] = useState<'success' | 'pending'>('success');
+  const [status, setStatus] = useState<'success' | 'pending'>('pending');
   const [saving, setSaving] = useState(false);
   // The receipt created from the current form contents. Set after a save so that
   // saving/printing again reuses it instead of creating a duplicate; any edit clears it.
@@ -57,6 +59,17 @@ export default function CreateReceipt() {
     setSavedReceipt(null);
   };
 
+  // Whenever the IFSC changes (pasted or typed) and is a known code, fill in its bank name.
+  useEffect(() => {
+    const code = receipt.ifscCode || '';
+    let cancelled = false;
+    bankNameFromIfsc(code).then(name => {
+      if (cancelled || !name) return;
+      setReceipt(prev => (prev.ifscCode === code && prev.bankName !== name ? { ...prev, bankName: name } : prev));
+    });
+    return () => { cancelled = true; };
+  }, [receipt.ifscCode]);
+
   const handlePaste = (text: string) => {
     setPasteText(text);
     if (text.trim()) {
@@ -66,7 +79,7 @@ export default function CreateReceipt() {
     } else {
       // Clear all auto-filled fields when paste is cleared
       editReceipt(() => ({ ...defaultReceipt, date: todayDate(), customFields: {} }));
-      setStatus('success');
+      setStatus('pending');
     }
   };
 
@@ -98,7 +111,7 @@ export default function CreateReceipt() {
   const handleReset = () => {
     editReceipt(() => ({ ...defaultReceipt, date: todayDate(), customFields: {} }));
     setPasteText('');
-    setStatus('success');
+    setStatus('pending');
   };
 
   // Creates the receipt on the server, or updates it if this form was already saved;
@@ -131,13 +144,16 @@ export default function CreateReceipt() {
 
   const handleSave = async () => {
     const saved = await doSave('saved');
-    if (saved) toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved successfully.` });
+    if (!saved) return;
+    trackEvent('receipt_saved', { source: 'create' });
+    toast({ title: 'Receipt saved', description: `Receipt #${saved.serialNumber} saved successfully.` });
   };
 
   const confirmPrint = async () => {
     setShowPrintDialog(false);
     const saved = await doSave('printed');
     if (!saved) return;
+    trackEvent('receipt_printed', { source: 'create', dual: dualReceipt });
     // Give React a moment to render the serial number into the preview before printing.
     setTimeout(() => window.print(), 300);
     toast({ title: 'Receipt printed & saved', description: `Receipt #${saved.serialNumber} saved.` });
@@ -175,6 +191,10 @@ export default function CreateReceipt() {
                 placeholder="Paste raw transaction details here... Account number, name, IFSC, amount, etc. will be auto-detected."
                 value={pasteText}
                 onChange={e => handlePaste(e.target.value)}
+                // onChange also fires while typing; count real pastes only.
+                onPaste={e => trackEvent('smart_paste', {
+                  fields_detected: Object.values(parseTransactionText(e.clipboardData.getData('text'))).filter(Boolean).length,
+                })}
                 rows={3}
                 className="pr-10"
               />
@@ -198,12 +218,6 @@ export default function CreateReceipt() {
               </Field>
               <Field label="Date" htmlFor="date">
                 <IconInput id="date" icon={CalendarDays} value={receipt.date || todayDate()} readOnly className="cursor-not-allowed bg-muted/60" />
-              </Field>
-              <Field label="Transaction ID *" htmlFor="transactionId">
-                <IconInput id="transactionId" icon={Hash} value={receipt.transactionId || ''} onChange={e => updateField('transactionId', e.target.value)} placeholder="Enter transaction ID" />
-              </Field>
-              <Field label="Reference Number (optional)" htmlFor="referenceNumber">
-                <IconInput id="referenceNumber" icon={Search} value={receipt.referenceNumber || ''} onChange={e => updateField('referenceNumber', e.target.value)} placeholder="Enter reference number" />
               </Field>
               <Field label="Status">
                 <Select value={status} onValueChange={(v: 'success' | 'pending') => { setStatus(v); editReceipt(prev => prev); }}>
@@ -279,7 +293,14 @@ export default function CreateReceipt() {
         </div>
 
         {/* Preview */}
-        <LivePreviewPanel className="animate-fade-in-up [animation-delay:0.15s]">
+        <LivePreviewPanel
+          className="animate-fade-in-up [animation-delay:0.15s]"
+          footer={
+            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving} className="w-full rounded-full">
+              <Printer /> Print Receipt
+            </Button>
+          }
+        >
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
               <ReceiptPreview data={receipt} business={business} compact />
