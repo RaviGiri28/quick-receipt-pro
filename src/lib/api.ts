@@ -129,6 +129,7 @@ interface ApiUser {
   is_admin?: boolean;
   terms_version?: string | null;
   terms_current?: string;
+  has_passcode?: boolean;
 }
 
 export const assetUrl = (path?: string | null) =>
@@ -150,6 +151,7 @@ export function userFromApi(u: ApiUser): UserProfile {
     isAdmin: !!u.is_admin,
     // Only the profile endpoint reports these; elsewhere the user counts as up to date.
     termsAccepted: u.terms_current === undefined || u.terms_version === u.terms_current,
+    hasPasscode: !!u.has_passcode,
   };
 }
 
@@ -203,6 +205,13 @@ export const authApi = {
   restoreAccount: (email: string, password: string) =>
     request<{ token: string }>('POST', '/api/auth/restore-account', { email, password }),
 
+  // Emails a one-time reset link; the reply is the same whether or not the email has an account.
+  forgotPassword: (email: string) => request<{ message: string }>('POST', '/api/auth/forgot-password', { email }),
+
+  // token: from the emailed link. Fails with code RESET_LINK_INVALID when used or expired.
+  resetPassword: (token: string, password: string) =>
+    request<{ message: string }>('POST', '/api/auth/reset-password', { token, password }),
+
   profile: async () => userFromApi((await request<{ user: ApiUser }>('GET', '/api/auth/profile')).user),
 
   updateProfile: async (data: ProfileUpdate) => {
@@ -231,6 +240,15 @@ export const authApi = {
 
   updateCustomFields: async (defs: CustomFieldDef[]) =>
     (await request<{ custom_fields: CustomFieldDef[] }>('PUT', '/api/auth/custom-fields', { custom_fields: defs })).custom_fields,
+
+  // Sets the app passcode; changing an existing one needs the current passcode.
+  setPasscode: (passcode: string, currentPasscode?: string) =>
+    request<unknown>('PUT', '/api/auth/passcode', { passcode, ...(currentPasscode && { current_passcode: currentPasscode }) }),
+
+  // Takes the account password, so it also works when the passcode is forgotten.
+  removePasscode: (password: string) => request<unknown>('DELETE', '/api/auth/passcode', { password }),
+
+  verifyPasscode: (passcode: string) => request<unknown>('POST', '/api/auth/passcode/verify', { passcode }),
 };
 
 // ---------------------------------------------------------------------------
@@ -244,8 +262,16 @@ export interface SupportMessage {
   message: string;
 }
 
+// From the landing page's Contact form: no account needed. `website` is a honeypot
+// field that stays empty for people.
+export interface ContactMessage extends SupportMessage {
+  phone: string;
+  website: string;
+}
+
 export const supportApi = {
   send: (data: SupportMessage) => request<{ ticketId: number }>('POST', '/api/support', data),
+  contact: (data: ContactMessage) => request<{ ticketId?: number }>('POST', '/api/support/contact', data),
 };
 
 // ---------------------------------------------------------------------------
@@ -267,6 +293,7 @@ interface ApiReceipt {
   notes: string | null;
   custom_fields: Record<string, string> | null;
   is_dual_print: boolean;
+  mask_account_number: boolean;
   serial_number: number | null;
   save_type: 'printed' | 'saved';
   is_printed: boolean;
@@ -289,6 +316,7 @@ export function receiptFromApi(r: ApiReceipt): ReceiptData {
     notes: r.notes || '',
     customFields: r.custom_fields || {},
     isDualPrint: !!r.is_dual_print,
+    maskAccountNumber: !!r.mask_account_number,
     serialNumber: r.serial_number || 0,
     saveType: r.save_type,
     isPrinted: !!r.is_printed,
@@ -318,6 +346,7 @@ export function receiptToApi(r: Partial<ReceiptData>) {
     custom_fields: Object.keys(customFields).length ? customFields : null,
     ...(r.saveType && { save_type: r.saveType }),
     ...(r.isDualPrint !== undefined && { is_dual_print: r.isDualPrint }),
+    ...(r.maskAccountNumber !== undefined && { mask_account_number: r.maskAccountNumber }),
   };
 }
 
@@ -350,6 +379,7 @@ export interface DashboardStats {
   total_receipts: number;
   todays_receipt: number;
   total_amount: number;
+  todays_amount: number;
   pending_receipts: number;
 }
 
@@ -380,13 +410,19 @@ export const receiptsApi = {
   get: async (id: string) =>
     receiptFromApi((await request<{ receipt: ApiReceipt }>('GET', `/api/receipts/${id}`)).receipt),
 
-  create: async (r: Partial<ReceiptData>) =>
-    receiptFromApi((await request<{ receipt: ApiReceipt }>('POST', '/api/receipts/create', receiptToApi(r))).receipt),
+  // demo: the guided tour's receipt, which the tour deletes again without the passcode.
+  create: async (r: Partial<ReceiptData>, { demo = false } = {}) =>
+    receiptFromApi((await request<{ receipt: ApiReceipt }>('POST', '/api/receipts/create', {
+      ...receiptToApi(r),
+      ...(demo && { is_demo: true }),
+    })).receipt),
 
   update: async (id: string, r: Partial<ReceiptData>) =>
     receiptFromApi((await request<{ receipt: ApiReceipt }>('PUT', `/api/receipts/${id}`, receiptToApi(r))).receipt),
 
-  remove: (id: string) => request<unknown>('DELETE', `/api/receipts/${id}`),
+  // passcode: required by the server when the user has an app passcode.
+  remove: (id: string, passcode?: string) =>
+    request<unknown>('DELETE', `/api/receipts/${id}`, passcode ? { passcode } : undefined),
 
   // "Today" is the browser's date, so the count matches the user's day whatever the server's timezone.
   dashboard: async (today = localIsoDate()) =>

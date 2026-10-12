@@ -83,6 +83,19 @@
   * {
     @apply border-border;
   }
+
+  /* Native date inputs: keep the calendar icon inside the box and readable in dark mode. */
+  input[type='date']::-webkit-calendar-picker-indicator {
+    margin-left: 0.25rem;
+    cursor: pointer;
+    opacity: 0.6;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  .dark input[type='date'] {
+    color-scheme: dark;
+  }
   html {
     scroll-behavior: smooth;
   }
@@ -228,6 +241,15 @@
   75% { transform: rotate(2deg); }
 }
 
+/* Guided tour: pulsing outline around the element the user should click. */
+@keyframes pulse-ring {
+  0%, 100% { outline: 0 solid hsl(var(--primary) / 0.5); }
+  50% { outline: 8px solid hsl(var(--primary) / 0); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
 /* Landing page scroll reveal. */
 .reveal {
   opacity: 0;
@@ -347,6 +369,23 @@
   }
   .print-area .receipt-card .receipt-footer-note p {
     margin-top: 0.3mm !important;
+  }
+  /* The "* { font-size: inherit }" rule above would shrink the watermark to body size,
+     and 6% opacity doesn't show on thermal paper. */
+  .print-area .receipt-card .watermark {
+    font-size: 22pt !important;
+    line-height: 1 !important;
+    opacity: 0.12 !important;
+    color: #000 !important;
+  }
+  .print-area .receipt-card .receipt-powered {
+    font-size: 5.5pt !important;
+    line-height: 1.2 !important;
+    margin-top: 0.8mm !important;
+  }
+  .print-area .receipt-card .receipt-powered a {
+    color: #000 !important;
+    text-decoration: none !important;
   }
   .print-area .receipt-card div[class*="border-b"],
   .print-area .receipt-card div[class*="border-t"] {

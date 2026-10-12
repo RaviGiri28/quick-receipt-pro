@@ -11,6 +11,7 @@ const links = [
   { label: 'Features', href: '/landing#features' },
   { label: 'How It Works', href: '/landing#how-it-works' },
   { label: 'FAQ', href: '/landing#faq' },
+  { label: 'Contact', href: '/landing#contact' },
   { label: 'Blog', href: '/blog' },
 ];
 

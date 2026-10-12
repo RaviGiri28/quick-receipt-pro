@@ -1,11 +1,13 @@
-import { formatInr } from '@/lib/utils';
+import { displayAccountNumber, formatInr } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatusSelect } from '@/components/StatusSelect';
+import { DeleteReceiptButton } from '@/components/DeleteReceiptButton';
+import { AccountMaskToggle } from '@/components/AccountNumberInput';
 import { EmptyState, Spinner } from '@/components/EmptyState';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -43,6 +45,11 @@ export default function SavedReceipts() {
   const [page, setPage] = useState(1);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [printDual, setPrintDual] = useState(false);
+  // Shows a masked receipt's full account number in the preview; hidden again for each
+  // receipt, so printing from the list always prints it masked.
+  const [revealAccount, setRevealAccount] = useState(false);
+  useEffect(() => setRevealAccount(false), [previewReceipt]);
+  const previewData = previewReceipt && { ...previewReceipt, maskAccountNumber: previewReceipt.maskAccountNumber && !revealAccount };
   const [printingId, setPrintingId] = useState<string | null>(null);
   const debouncedSearch = useDebounce(search);
 
@@ -96,7 +103,7 @@ export default function SavedReceipts() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-10"
-              placeholder="Search by account, name, or serial no..."
+              placeholder="Search by account, name, mobile or serial no..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -135,7 +142,7 @@ export default function SavedReceipts() {
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-32">Actions</TableHead>
+                  <TableHead className="w-40">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -143,11 +150,11 @@ export default function SavedReceipts() {
                   <TableRow key={r.id} className="group transition-colors hover:bg-accent/50">
                     <TableCell><span className="rounded-lg bg-accent px-2 py-1 text-xs font-bold text-primary">#{r.serialNumber}</span></TableCell>
                     <TableCell className="font-semibold text-navy">{r.accountHolder}</TableCell>
-                    <TableCell className="font-mono text-sm">{r.accountNumber}</TableCell>
+                    <TableCell className="font-mono text-sm">{displayAccountNumber(r)}</TableCell>
                     <TableCell className="text-right font-bold tabular-nums text-navy">{formatInr(r.amount)}</TableCell>
                     <TableCell>{r.date}</TableCell>
                     <TableCell>
-                      <StatusBadge status={r.status} />
+                      <StatusSelect receipt={r} />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 opacity-80 transition-opacity group-hover:opacity-100">
@@ -160,6 +167,7 @@ export default function SavedReceipts() {
                         <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-primary hover:text-primary-foreground" title="Print" onClick={() => handlePrint(r)} disabled={printingId !== null}>
                           <Printer className="h-4 w-4" />
                         </Button>
+                        <DeleteReceiptButton receipt={r} source="saved" />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -174,12 +182,18 @@ export default function SavedReceipts() {
       {/* Preview Dialog */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
         <DialogContent className={`bg-gradient-to-b from-accent/60 to-card ${printDual ? 'max-w-3xl' : 'max-w-lg'}`}>
-          <DialogHeader><DialogTitle>Receipt Preview</DialogTitle></DialogHeader>
-          {previewReceipt && (
+          <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0 pr-8">
+            <DialogTitle>Receipt Preview</DialogTitle>
+            {/* Only for receipts saved masked; reveals the number on screen only. */}
+            {previewReceipt?.maskAccountNumber && (
+              <AccountMaskToggle masked={!revealAccount} onChange={masked => setRevealAccount(!masked)} />
+            )}
+          </DialogHeader>
+          {previewData && (
             <div className="print-area">
               <div className={printDual ? 'grid grid-cols-2 gap-2' : ''}>
-                <ReceiptPreview data={previewReceipt} business={business} compact={printDual} />
-                {printDual && <ReceiptPreview data={previewReceipt} business={business} compact />}
+                <ReceiptPreview data={previewData} business={business} compact={printDual} />
+                {printDual && <ReceiptPreview data={previewData} business={business} compact />}
               </div>
             </div>
           )}

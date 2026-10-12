@@ -1,5 +1,5 @@
 import {
-  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, Newspaper, Bell, PenSquare, Megaphone,
+  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, HelpCircle, Newspaper, Bell, PenSquare, Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -19,11 +19,13 @@ interface NavItem {
   url: string;
   icon: LucideIcon;
   badge?: number;
+  // Anchor for the guided tour.
+  tour?: string;
 }
 
 const mainNav: NavItem[] = [
   { title: 'Dashboard', url: '/', icon: Home },
-  { title: 'Create Receipt', url: '/create', icon: FilePlus },
+  { title: 'Create Receipt', url: '/create', icon: FilePlus, tour: 'nav-create' },
   { title: 'Saved Receipts', url: '/saved', icon: Bookmark },
   { title: 'History', url: '/history', icon: History },
 ];
@@ -32,6 +34,7 @@ const secondaryNav: NavItem[] = [
   { title: 'Settings', url: '/settings', icon: Settings },
   { title: 'Profile', url: '/profile', icon: User },
   { title: 'About', url: '/about', icon: Info },
+  { title: 'FAQs', url: '/faq', icon: HelpCircle },
   { title: 'Support', url: '/support', icon: LifeBuoy },
 ];
 
@@ -45,10 +48,10 @@ const adminNav: NavItem[] = [
   { title: 'Announcements', url: '/admin/announcements', icon: Megaphone },
 ];
 
-function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
+function NavGroup({ label, items, tour }: { label: string; items: NavItem[]; tour?: string }) {
   const { isMobile, setOpenMobile } = useSidebar();
   return (
-    <SidebarGroup className="px-3">
+    <SidebarGroup className="px-3" data-tour={tour}>
       <SidebarGroupLabel className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-white/55">
         {label}
       </SidebarGroupLabel>
@@ -63,6 +66,7 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
                   className={linkClass}
                   activeClassName={activeClass}
                   onClick={() => isMobile && setOpenMobile(false)}
+                  data-tour={item.tour}
                 >
                   <item.icon className="!h-5 !w-5 transition-transform duration-300 group-hover/nav:scale-110" />
                   <span>{item.title}</span>
@@ -102,7 +106,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <div className="mx-5 h-px bg-white/15" />
       <SidebarContent className="gap-2 pt-4">
-        <NavGroup label="Main" items={mainNav} />
+        <NavGroup label="Main" items={mainNav} tour="nav-main" />
         <NavGroup label="Updates" items={updatesNav} />
         {user?.isAdmin && <NavGroup label="Admin" items={adminNav} />}
         <NavGroup label="More" items={secondaryNav} />

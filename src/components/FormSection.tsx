@@ -8,13 +8,15 @@ interface FormSectionProps {
   description?: string;
   actions?: React.ReactNode;
   className?: string;
+  // Anchor for the guided tour.
+  tour?: string;
   children: React.ReactNode;
 }
 
 // White card with an icon-tile header, used for each block of a form.
-export function FormSection({ icon: Icon, title, description, actions, className, children }: FormSectionProps) {
+export function FormSection({ icon: Icon, title, description, actions, className, tour, children }: FormSectionProps) {
   return (
-    <section className={cn('card-soft p-5 sm:p-6', className)}>
+    <section className={cn('card-soft p-5 sm:p-6', className)} data-tour={tour}>
       <div className="mb-5 flex items-center gap-3">
         <div className="icon-tile h-11 w-11"><Icon className="h-5 w-5" /></div>
         <div className="min-w-0 flex-1">

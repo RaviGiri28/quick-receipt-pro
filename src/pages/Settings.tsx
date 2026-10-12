@@ -13,6 +13,7 @@ import { FormSection } from '@/components/FormSection';
 import { IconInput } from '@/components/IconInput';
 import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { PasscodeSettings } from '@/components/PasscodeSettings';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { analyticsConfigured, isAnalyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import {
@@ -207,6 +208,8 @@ export default function SettingsPage() {
               ))}
             </div>
           </FormSection>
+
+          <PasscodeSettings />
 
           {analyticsConfigured && (
             <FormSection icon={ShieldCheck} title="Privacy" description="Applies to this device straight away">

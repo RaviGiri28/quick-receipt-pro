@@ -7,15 +7,17 @@ interface LivePreviewPanelProps {
   className?: string;
   /** Replaces the default thermal-printer note under the receipt. */
   footer?: React.ReactNode;
+  // Anchor for the guided tour.
+  tour?: string;
   /** The receipt(s), usually wrapped in a `.print-area`. */
   children: React.ReactNode;
 }
 
 // Sticky card that frames on-screen receipts. Every wrapper is `print-static` so
 // printing lays out the receipt exactly as it did without this frame.
-export function LivePreviewPanel({ title = 'Live Preview', subtitle, className, footer, children }: LivePreviewPanelProps) {
+export function LivePreviewPanel({ title = 'Live Preview', subtitle, className, footer, tour, children }: LivePreviewPanelProps) {
   return (
-    <div className={cn('print-static card-soft overflow-hidden p-4 sm:p-5 lg:sticky lg:top-24', className)}>
+    <div className={cn('print-static card-soft overflow-hidden p-4 sm:p-5 lg:sticky lg:top-24', className)} data-tour={tour}>
       <div className="mb-4 flex items-center gap-3 no-print">
         <div className="icon-tile h-11 w-11"><Eye className="h-5 w-5" /></div>
         <div>

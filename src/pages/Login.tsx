@@ -18,7 +18,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { SUPPORT_EMAIL } from '@/lib/config';
 
 const highlights = [
   { icon: Zap, label: 'Fast & Easy' },
@@ -160,16 +159,9 @@ export default function LoginPage() {
                   <Checkbox checked={remember} onCheckedChange={v => setRemember(!!v)} id="remember" className="h-5 w-5 rounded-md" />
                   <Label htmlFor="remember" className="cursor-pointer text-sm font-medium">Remember me</Label>
                 </div>
-                <button
-                  type="button"
-                  className="text-sm font-semibold text-primary hover:underline"
-                  onClick={() => toast({
-                    title: 'Forgot your password?',
-                    description: `Email ${SUPPORT_EMAIL} from your registered email address and we will help you reset it.`,
-                  })}
-                >
+                <Link to="/forgot-password" state={{ email }} className="text-sm font-semibold text-primary hover:underline">
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <Button type="submit" className="group h-12 w-full text-base" disabled={submitting}>
                 {submitting ? (

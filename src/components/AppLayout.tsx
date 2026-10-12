@@ -3,6 +3,8 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { TermsGate } from '@/components/TermsGate';
+import { PasscodeLock } from '@/components/PasscodeLock';
+import { isUnlocked } from '@/lib/appLock';
 import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -95,6 +97,8 @@ function UserMenu() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, sessionError, retrySession, logout } = useAuth();
+  // Re-render once the passcode lock is passed (the flag itself lives in sessionStorage).
+  const [, setUnlockedNow] = useState(false);
 
   if (isLoading) {
     return (
@@ -128,6 +132,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+
+  if (user.hasPasscode && !isUnlocked(user.id)) {
+    return <PasscodeLock onUnlock={() => setUnlockedNow(true)} />;
+  }
 
   return (
     <SidebarProvider style={{ '--sidebar-width': '17rem' } as React.CSSProperties}>

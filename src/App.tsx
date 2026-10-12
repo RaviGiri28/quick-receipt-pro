@@ -16,8 +16,11 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Support from "./pages/Support";
+import Faq from "./pages/Faq";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -30,6 +33,7 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import { BlogShell, PublicShell } from "@/components/BlogShell";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
+import { TourProvider } from "@/components/TourProvider";
 
 const queryClient = new QueryClient();
 
@@ -49,11 +53,14 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <AnalyticsTracker />
+            <TourProvider>
             <Routes>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
               <Route path="/create" element={<AppLayout><CreateReceipt /></AppLayout>} />
               <Route path="/edit/:id" element={<AppLayout><EditReceipt /></AppLayout>} />
@@ -63,6 +70,7 @@ const App = () => (
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
               <Route path="/about" element={<AppLayout><About /></AppLayout>} />
               <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+              <Route path="/faq" element={<AppLayout><Faq /></AppLayout>} />
               <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
               {/* Public for visitors, in-app for logged-in users. */}
               <Route path="/privacy" element={<PublicShell>{() => <PrivacyPolicy />}</PublicShell>} />
@@ -75,6 +83,7 @@ const App = () => (
               <Route path="/admin/announcements" element={<AppLayout><AdminRoute><AdminAnnouncements /></AdminRoute></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </TourProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

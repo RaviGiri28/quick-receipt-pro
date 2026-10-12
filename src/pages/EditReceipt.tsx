@@ -7,10 +7,12 @@ import { IconInput } from '@/components/IconInput';
 import { FormSection, Field } from '@/components/FormSection';
 import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { Spinner } from '@/components/EmptyState';
+import { PasscodeDialog } from '@/components/PasscodeDialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { AccountNumberInput, AccountMaskToggle } from '@/components/AccountNumberInput';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { receiptsApi, errorMessage } from '@/lib/api';
 import { getSettings } from '@/lib/storage';
@@ -19,32 +21,14 @@ import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReceiptData } from '@/types/receipt';
 import {
-  Save, Printer, ArrowLeft, Pencil, User, CreditCard, Landmark, IndianRupee, CalendarDays, Hash, Search,
-  Building2, StickyNote, Smartphone, Tag, Copy, type LucideIcon,
+  Save, Printer, ArrowLeft, FileText, UserRound, User, Landmark, IndianRupee, CalendarDays,
+  Building2, StickyNote, Smartphone, Tag, Copy,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
 
 type TextField = 'accountHolder' | 'accountNumber' | 'ifscCode' | 'amount' | 'date'
-  | 'transactionId' | 'referenceNumber' | 'bankName' | 'notes';
-
-// Every field shown on the printed receipt is editable (customer mobile has its own input below).
-const editableFields: { key: TextField; label: string; maxLength?: number }[] = [
-  { key: 'accountHolder', label: 'Account Holder *', maxLength: 150 },
-  { key: 'accountNumber', label: 'Account Number *', maxLength: 50 },
-  { key: 'ifscCode', label: 'IFSC Code', maxLength: 20 },
-  { key: 'amount', label: 'Amount (₹) *' },
-  { key: 'date', label: 'Date (DD/MM/YYYY) *' },
-  { key: 'transactionId', label: 'Transaction ID', maxLength: 100 },
-  { key: 'referenceNumber', label: 'Reference No', maxLength: 100 },
-  { key: 'bankName', label: 'Bank Name *', maxLength: 100 },
-  { key: 'notes', label: 'Notes', maxLength: 1000 },
-];
-
-const fieldIcons: Record<TextField, LucideIcon> = {
-  accountHolder: User, accountNumber: CreditCard, ifscCode: Landmark, amount: IndianRupee, date: CalendarDays,
-  transactionId: Hash, referenceNumber: Search, bankName: Building2, notes: StickyNote,
-};
+  | 'bankName' | 'notes';
 
 export default function EditReceipt() {
   const { id } = useParams();
@@ -52,7 +36,10 @@ export default function EditReceipt() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const business = useBusinessInfo();
-  const customFieldDefs = useAuth().user?.customFields || [];
+  const { user } = useAuth();
+  const customFieldDefs = user?.customFields || [];
+  // Users with an app passcode enter it each time they open a receipt for editing.
+  const [passcodeOk, setPasscodeOk] = useState(false);
 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -79,6 +66,18 @@ export default function EditReceipt() {
       navigate('/history');
     }
   }, [error, navigate, toast]);
+
+  if (user?.hasPasscode && !passcodeOk) {
+    return (
+      <PasscodeDialog
+        open
+        title="Enter your passcode to edit"
+        description="Your passcode is needed to edit a receipt."
+        onVerified={() => setPasscodeOk(true)}
+        onCancel={() => navigate(-1)}
+      />
+    );
+  }
 
   if (!receipt) {
     return (
@@ -148,31 +147,31 @@ export default function EditReceipt() {
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
         <div className="stagger space-y-6 no-print">
-          <FormSection icon={Pencil} title="Edit Details">
+          <FormSection
+            icon={FileText}
+            title="Transaction Details"
+            actions={
+              <AccountMaskToggle
+                masked={!!receipt.maskAccountNumber}
+                onChange={masked => setReceipt(prev => prev ? { ...prev, maskAccountNumber: masked } : prev)}
+              />
+            }
+          >
             <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-              {editableFields.map(f => (
-                <Field key={f.key} label={f.label} htmlFor={f.key}>
-                  <IconInput
-                    id={f.key}
-                    icon={fieldIcons[f.key]}
-                    value={receipt[f.key] || ''}
-                    onChange={e => updateField(f.key, e.target.value)}
-                    maxLength={f.maxLength}
-                    inputMode={f.key === 'amount' ? 'decimal' : undefined}
-                  />
-                </Field>
-              ))}
-              <Field label="Customer Mobile *" htmlFor="customerMobile" error={mobileError}>
-                <IconInput
-                  id="customerMobile"
-                  icon={Smartphone}
-                  value={receipt.customerMobile || ''}
-                  onChange={e => updateMobile(e.target.value)}
-                  type="tel"
-                  inputMode="tel"
-                  maxLength={14}
-                  aria-invalid={!!mobileError}
-                />
+              <Field label="Account Holder *" htmlFor="accountHolder">
+                <IconInput id="accountHolder" icon={User} value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="Enter account holder name" maxLength={150} />
+              </Field>
+              <Field label="Account Number *" htmlFor="accountNumber">
+                <AccountNumberInput value={receipt.accountNumber || ''} masked={!!receipt.maskAccountNumber} onChange={v => updateField('accountNumber', v)} maxLength={50} />
+              </Field>
+              <Field label="IFSC Code" htmlFor="ifscCode">
+                <IconInput id="ifscCode" icon={Landmark} value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="Enter IFSC code" className="uppercase placeholder:normal-case" maxLength={20} />
+              </Field>
+              <Field label="Amount (₹) *" htmlFor="amount">
+                <IconInput id="amount" icon={IndianRupee} value={receipt.amount || ''} onChange={e => updateField('amount', e.target.value)} placeholder="Enter amount" type="number" step="0.01" inputMode="decimal" />
+              </Field>
+              <Field label="Date (DD/MM/YYYY) *" htmlFor="date">
+                <IconInput id="date" icon={CalendarDays} value={receipt.date || ''} onChange={e => updateField('date', e.target.value)} placeholder="DD/MM/YYYY" />
               </Field>
               <Field label="Status">
                 <Select
@@ -186,24 +185,44 @@ export default function EditReceipt() {
                   </SelectContent>
                 </Select>
               </Field>
+              <Field label="Bank Name *" htmlFor="bankName" className="sm:col-span-2">
+                <IconInput id="bankName" icon={Building2} value={receipt.bankName || ''} onChange={e => updateField('bankName', e.target.value)} placeholder="State Bank of India" maxLength={100} />
+              </Field>
             </div>
+          </FormSection>
 
-            {customFieldDefs.length > 0 && (
-              <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 border-t pt-5 sm:grid-cols-2">
-                {customFieldDefs.map(cf => (
-                  <Field key={cf.id} label={cf.label} htmlFor={cf.id}>
-                    <IconInput
-                      id={cf.id}
-                      icon={Tag}
-                      value={receipt.customFields?.[cf.id] || ''}
-                      onChange={e => updateCustomField(cf.id, e.target.value)}
-                      placeholder={cf.label}
-                      maxLength={500}
-                    />
-                  </Field>
-                ))}
-              </div>
-            )}
+          <FormSection icon={UserRound} title={<>Customer Details <span className="text-sm font-medium text-primary">(mobile required)</span></>}>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+              <Field label="Customer Mobile *" htmlFor="customerMobile" error={mobileError}>
+                <IconInput
+                  id="customerMobile"
+                  icon={Smartphone}
+                  value={receipt.customerMobile || ''}
+                  onChange={e => updateMobile(e.target.value)}
+                  placeholder="+91 9876543210"
+                  type="tel"
+                  inputMode="tel"
+                  maxLength={14}
+                  aria-invalid={!!mobileError}
+                  className={mobileError ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/15' : ''}
+                />
+              </Field>
+              <Field label="Notes (optional)" htmlFor="notes">
+                <IconInput id="notes" icon={StickyNote} value={receipt.notes || ''} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..." maxLength={1000} />
+              </Field>
+              {customFieldDefs.map(cf => (
+                <Field key={cf.id} label={cf.label} htmlFor={cf.id}>
+                  <IconInput
+                    id={cf.id}
+                    icon={Tag}
+                    value={receipt.customFields?.[cf.id] || ''}
+                    onChange={e => updateCustomField(cf.id, e.target.value)}
+                    placeholder={cf.label}
+                    maxLength={500}
+                  />
+                </Field>
+              ))}
+            </div>
 
             <label htmlFor="dual" className="mt-5 flex cursor-pointer items-center justify-between gap-4 rounded-xl border bg-accent/40 p-4 transition-colors hover:border-primary/30">
               <span className="flex items-center gap-3">
@@ -227,7 +246,15 @@ export default function EditReceipt() {
           </div>
         </div>
 
-        <LivePreviewPanel title="Preview" className="animate-fade-in-up [animation-delay:0.15s]">
+        <LivePreviewPanel
+          title="Preview"
+          className="animate-fade-in-up [animation-delay:0.15s]"
+          footer={
+            <Button onClick={handlePrint} disabled={saving} className="w-full rounded-full">
+              <Printer /> Print Receipt
+            </Button>
+          }
+        >
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
               <ReceiptPreview data={receipt} business={business} compact={dualReceipt} />

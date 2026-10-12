@@ -13,6 +13,7 @@ export interface ReceiptData {
   saveType?: 'printed' | 'saved';
   isPrinted?: boolean; // printed at least once (listed in History)
   isDualPrint?: boolean;
+  maskAccountNumber?: boolean; // print/show only the last 5 digits of the account number
   notes: string;
   bankName?: string;
   customerMobile?: string;
@@ -45,6 +46,8 @@ export interface UserProfile {
   isAdmin: boolean;
   // Has accepted the current Terms and Privacy Policy.
   termsAccepted: boolean;
+  // Has a 4-digit app passcode (asked when the app opens and before deleting a receipt).
+  hasPasscode: boolean;
 }
 
 export interface CustomFieldDef {
@@ -58,6 +61,8 @@ export interface AppSettings {
   showName: boolean;
   showWatermark: boolean;
   primaryColor: string;
+  // Last choice of the account-number eye toggle on Create Receipt; masked when unset.
+  maskAccountNumber?: boolean;
   // Legacy: custom field definitions used to live here (per device). They now belong to
   // the account (UserProfile.customFields); AuthContext uploads any left here once.
   customFields?: CustomFieldDef[];

@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { PublicNav } from '@/components/PublicNav';
 import { PrinterHero } from '@/components/PrinterHero';
 import { SiteFooter } from '@/components/SiteFooter';
+import { ContactSection } from '@/components/ContactSection';
 import {
   Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck,
 } from 'lucide-react';
@@ -188,6 +189,14 @@ export default function Landing() {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className="scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <SectionTitle lead="Get in" accent="Touch" sub="Questions, feedback or a demo? Send us a message and we will get back to you." />
+          <ContactSection />
         </div>
       </section>
 

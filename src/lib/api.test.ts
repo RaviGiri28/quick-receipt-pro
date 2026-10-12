@@ -42,6 +42,7 @@ describe('receipt mapping', () => {
     notes: null,
     custom_fields: { cf_1: 'Branch A' },
     is_dual_print: true,
+    mask_account_number: true,
     serial_number: 3,
     save_type: 'printed' as const,
     is_printed: true,
@@ -59,6 +60,7 @@ describe('receipt mapping', () => {
       referenceNumber: '',
       serialNumber: 3,
       isPrinted: true,
+      maskAccountNumber: true,
       customFields: { cf_1: 'Branch A' },
     });
   });
@@ -71,6 +73,7 @@ describe('receipt mapping', () => {
       status: 'Pending',
       save_type: 'printed',
       is_dual_print: true,
+      mask_account_number: true,
       custom_fields: { cf_1: 'Branch A' },
     });
   });

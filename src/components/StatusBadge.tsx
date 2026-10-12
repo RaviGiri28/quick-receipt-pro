@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-export function StatusBadge({ status }: { status: 'success' | 'pending' }) {
+export function StatusBadge({ status, children }: { status: 'success' | 'pending'; children?: ReactNode }) {
   const success = status === 'success';
   return (
     <span
@@ -13,6 +14,7 @@ export function StatusBadge({ status }: { status: 'success' | 'pending' }) {
     >
       <span className={cn('h-1.5 w-1.5 rounded-full', success ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse')} />
       {success ? 'Success' : 'Pending'}
+      {children}
     </span>
   );
 }

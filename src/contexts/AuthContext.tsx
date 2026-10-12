@@ -7,6 +7,7 @@ import {
 } from '@/lib/api';
 import { getSettings, saveSettings } from '@/lib/storage';
 import { TERMS_VERSION } from '@/lib/legal';
+import { clearUnlocked, markUnlocked } from '@/lib/appLock';
 
 // Custom field definitions used to be kept per browser. If the account has never
 // stored any, upload this browser's ones so receipts keep showing their values.
@@ -43,6 +44,9 @@ interface AuthContextType {
   restoreAccount: (email: string, password: string, remember: boolean) => Promise<void>;
   // Starts the deletion (recovery period) and logs out; returns when it will be erased.
   deleteAccount: (password: string) => Promise<string>;
+  // App passcode: set or change (the current one is needed to change it), or remove with the password.
+  setPasscode: (passcode: string, currentPasscode?: string) => Promise<void>;
+  removePasscode: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -55,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearToken();
+    clearUnlocked();
     setUser(null);
     setSessionError(null);
     queryClient.clear();
@@ -95,7 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     try {
       // Login only returns a subset of the profile; fetch the full one.
-      setUser(await loadProfile());
+      const profile = await loadProfile();
+      // A new login always starts locked: the passcode is asked after the password too.
+      clearUnlocked();
+      setUser(profile);
     } catch (err) {
       clearToken();
       throw err;
@@ -137,8 +145,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(prev => (prev ? { ...prev, customFields: saved } : prev));
   };
 
+  const setPasscode = async (passcode: string, currentPasscode?: string) => {
+    await authApi.setPasscode(passcode, currentPasscode);
+    // Whoever just set it knows it: don't lock this tab.
+    if (user) markUnlocked(user.id);
+    setUser(prev => (prev ? { ...prev, hasPasscode: true } : prev));
+  };
+
+  const removePasscode = async (password: string) => {
+    await authApi.removePasscode(password);
+    setUser(prev => (prev ? { ...prev, hasPasscode: false } : prev));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode }}>
       {children}
     </AuthContext.Provider>
   );
@@ -162,6 +182,8 @@ export function useAuth() {
       acceptTerms: async () => {},
       restoreAccount: async () => {},
       deleteAccount: async () => '',
+      setPasscode: async () => {},
+      removePasscode: async () => {},
     } as AuthContextType;
   }
   return ctx;

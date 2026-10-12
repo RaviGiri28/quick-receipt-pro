@@ -24,7 +24,6 @@ export function buildReceiptRows(receipts: ReceiptData[], customFieldDefs: Custo
       // Numeric so the column can be summed in Excel.
       'Amount (₹)': Number(r.amount) || 0,
       'Date': r.date,
-      'Transaction ID': r.transactionId,
       'Reference No': r.referenceNumber,
       'Customer Mobile': r.customerMobile || '',
       'Status': r.status === 'success' ? 'Success' : 'Pending',

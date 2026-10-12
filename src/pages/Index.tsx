@@ -1,9 +1,13 @@
+import { useEffect } from 'react';
 import { formatInr } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { receiptsApi, localIsoDate } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useCountUp } from '@/hooks/use-count-up';
+import { useTour } from '@/hooks/use-tour';
+import { useAuth } from '@/contexts/AuthContext';
+import { isTourDone } from '@/lib/tour';
 import { PrinterHero } from '@/components/PrinterHero';
 import { AnnouncementsPanel } from '@/components/AnnouncementsPanel';
 import { Button } from '@/components/ui/button';
@@ -65,8 +69,16 @@ export default function Dashboard() {
 
   const total = useCountUp(stats?.total_receipts);
   const todays = useCountUp(stats?.todays_receipt);
-  const amount = useCountUp(stats?.total_amount);
+  const todaysAmount = useCountUp(stats?.todays_amount);
   const pending = useCountUp(stats?.pending_receipts);
+
+  // New accounts (no receipts yet) get the guided tour once, after accepting the terms.
+  const { user } = useAuth();
+  const tour = useTour();
+  const isNewAccount = stats?.total_receipts === 0;
+  useEffect(() => {
+    if (user && user.termsAccepted && isNewAccount && !tour.active && !isTourDone(user.id)) tour.start();
+  }, [user, isNewAccount, tour]);
   const show = (value: number | undefined, format: (n: number) => string = n => String(Math.round(n))) =>
     value !== undefined ? format(value) : isError ? '—' : <span className="inline-block h-7 w-12 animate-pulse rounded-md bg-muted" />;
 
@@ -106,10 +118,10 @@ export default function Dashboard() {
       </section>
       <AnnouncementsPanel />
       {/* Stats */}
-      <section className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="dashboard-stats">
         <StatCard title="Total Receipts" value={show(total)} icon={FileText} />
         <StatCard title="Today's Receipts" value={show(todays)} icon={CalendarDays} />
-        <StatCard title="Total Amount" value={show(amount, n => formatInr(Math.round(n)))} icon={IndianRupee} />
+        <StatCard title="Today's Amount" value={show(todaysAmount, n => formatInr(Math.round(n)))} icon={IndianRupee} />
         <StatCard title="Pending Receipts" value={show(pending)} icon={Clock} onClick={() => navigate('/saved?status=pending')} />
       </section>
 

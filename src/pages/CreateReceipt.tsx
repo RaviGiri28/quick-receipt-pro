@@ -1,4 +1,4 @@
-import { formatInr } from '@/lib/utils';
+import { formatInr, maskAccountNumber } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -15,20 +15,22 @@ import { IconInput } from '@/components/IconInput';
 import { FormSection, Field } from '@/components/FormSection';
 import { LivePreviewPanel } from '@/components/LivePreviewPanel';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { AccountNumberInput, AccountMaskToggle } from '@/components/AccountNumberInput';
 import { parseTransactionText } from '@/lib/receiptParser';
 import { bankNameFromIfsc } from '@/lib/ifsc';
-import { getSettings } from '@/lib/storage';
+import { getSettings, saveSettings } from '@/lib/storage';
 import { receiptsApi, errorMessage } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
 import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateReceipt } from '@/lib/receiptValidation';
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import {
-  Printer, Save, RotateCcw, ClipboardPaste, Sparkles, FileText, User, CreditCard, Landmark, IndianRupee,
+  Printer, Save, RotateCcw, ClipboardPaste, Sparkles, FileText, User, Landmark, IndianRupee,
   CalendarDays, Building2, UserRound, Smartphone, StickyNote, Tag, Copy, ArrowRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
+import { TOUR_DEMO_PASTE_EVENT, TOUR_DEMO_SAVED_EVENT, TOUR_ENDED_EVENT, TOUR_PRINTED_EVENT } from '@/lib/tour';
 
 const todayDate = () => new Date().toLocaleDateString('en-IN');
 
@@ -46,12 +48,17 @@ export default function CreateReceipt() {
   });
   const [pasteText, setPasteText] = useState('');
   const [dualReceipt, setDualReceipt] = useState(settings.dualReceipt);
+  // Print only the last 5 digits of the account number; remembered on this device.
+  const [maskAccount, setMaskAccount] = useState(settings.maskAccountNumber ?? true);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [status, setStatus] = useState<'success' | 'pending'>('pending');
   const [saving, setSaving] = useState(false);
   // The receipt created from the current form contents. Set after a save so that
   // saving/printing again reuses it instead of creating a duplicate; any edit clears it.
   const [savedReceipt, setSavedReceipt] = useState<ReceiptData | null>(null);
+  // The form holds the guided tour's demo transaction: it is saved as a demo receipt,
+  // which the tour deletes, and cleared when the tour ends.
+  const [isDemo, setIsDemo] = useState(false);
 
   // Applies a form edit; the edited form is a new receipt, so drop the old serial number.
   const editReceipt = (update: (prev: Partial<ReceiptData>) => Partial<ReceiptData>) => {
@@ -83,6 +90,22 @@ export default function CreateReceipt() {
     }
   };
 
+  // The guided tour pastes its demo transaction through Smart Paste, and the form is
+  // cleared again when the tour ends.
+  useEffect(() => {
+    const onDemoPaste = (e: Event) => {
+      handlePaste((e as CustomEvent<string>).detail);
+      setIsDemo(true);
+    };
+    const onTourEnded = () => { if (isDemo) handleReset(); };
+    window.addEventListener(TOUR_DEMO_PASTE_EVENT, onDemoPaste);
+    window.addEventListener(TOUR_ENDED_EVENT, onTourEnded);
+    return () => {
+      window.removeEventListener(TOUR_DEMO_PASTE_EVENT, onDemoPaste);
+      window.removeEventListener(TOUR_ENDED_EVENT, onTourEnded);
+    };
+  });
+
   const [mobileError, setMobileError] = useState('');
 
   const updateField = (field: string, value: string) => {
@@ -108,10 +131,16 @@ export default function CreateReceipt() {
     }));
   };
 
+  const changeMaskAccount = (masked: boolean) => {
+    setMaskAccount(masked);
+    saveSettings({ ...getSettings(), maskAccountNumber: masked });
+  };
+
   const handleReset = () => {
     editReceipt(() => ({ ...defaultReceipt, date: todayDate(), customFields: {} }));
     setPasteText('');
     setStatus('pending');
+    setIsDemo(false);
   };
 
   // Creates the receipt on the server, or updates it if this form was already saved;
@@ -123,12 +152,14 @@ export default function CreateReceipt() {
       const payload = {
         ...receipt,
         status,
+        maskAccountNumber: maskAccount,
         saveType,
         isDualPrint: saveType === 'printed' && dualReceipt,
       };
       const saved = savedReceipt
         ? await receiptsApi.update(savedReceipt.id, payload)
-        : await receiptsApi.create(payload);
+        : await receiptsApi.create(payload, { demo: isDemo });
+      if (isDemo) window.dispatchEvent(new CustomEvent(TOUR_DEMO_SAVED_EVENT, { detail: saved.id }));
       setSavedReceipt(saved);
       setReceipt(prev => ({ ...prev, serialNumber: saved.serialNumber }));
       queryClient.invalidateQueries({ queryKey: ['receipts'] });
@@ -154,6 +185,7 @@ export default function CreateReceipt() {
     const saved = await doSave('printed');
     if (!saved) return;
     trackEvent('receipt_printed', { source: 'create', dual: dualReceipt });
+    window.dispatchEvent(new Event(TOUR_PRINTED_EVENT));
     // Give React a moment to render the serial number into the preview before printing.
     setTimeout(() => window.print(), 300);
     toast({ title: 'Receipt printed & saved', description: `Receipt #${saved.serialNumber} saved.` });
@@ -177,14 +209,17 @@ export default function CreateReceipt() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
         {/* Form */}
         <div className="stagger space-y-6 no-print">
-          <section className="card-soft relative overflow-hidden border-dashed border-primary/30 p-5 sm:p-6">
+          <section className="card-soft relative overflow-hidden border-dashed border-primary/30 p-5 sm:p-6" data-tour="smart-paste">
             <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
             <div className="relative mb-4 flex items-center gap-3">
               <div className="icon-tile h-11 w-11 bg-primary text-primary-foreground"><Sparkles className="h-5 w-5" /></div>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-lg font-bold text-navy">Smart Paste</h2>
                 <p className="text-sm text-muted-foreground">Paste the transaction message — fields fill in automatically.</p>
               </div>
+              <Button onClick={handleReset} variant="outline" size="sm" className="group shrink-0 self-start">
+                <RotateCcw className="transition-transform duration-500 group-hover:-rotate-180" /> Reset
+              </Button>
             </div>
             <div className="relative">
               <Textarea
@@ -202,13 +237,13 @@ export default function CreateReceipt() {
             </div>
           </section>
 
-          <FormSection icon={FileText} title="Transaction Details">
+          <FormSection icon={FileText} title="Transaction Details" tour="transaction-details" actions={<span data-tour="mask-toggle"><AccountMaskToggle masked={maskAccount} onChange={changeMaskAccount} /></span>}>
             <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
               <Field label="Account Holder *" htmlFor="accountHolder">
                 <IconInput id="accountHolder" icon={User} value={receipt.accountHolder || ''} onChange={e => updateField('accountHolder', e.target.value)} placeholder="Enter account holder name" />
               </Field>
               <Field label="Account Number *" htmlFor="accountNumber">
-                <IconInput id="accountNumber" icon={CreditCard} value={receipt.accountNumber || ''} onChange={e => updateField('accountNumber', e.target.value)} placeholder="Enter account number" inputMode="numeric" />
+                <AccountNumberInput value={receipt.accountNumber || ''} masked={maskAccount} onChange={v => updateField('accountNumber', v)} />
               </Field>
               <Field label="IFSC Code" htmlFor="ifscCode">
                 <IconInput id="ifscCode" icon={Landmark} value={receipt.ifscCode || ''} onChange={e => updateField('ifscCode', e.target.value)} placeholder="Enter IFSC code" className="uppercase placeholder:normal-case" />
@@ -234,7 +269,7 @@ export default function CreateReceipt() {
             </div>
           </FormSection>
 
-          <FormSection icon={UserRound} title={<>Customer Details <span className="text-sm font-medium text-primary">(mobile required)</span></>}>
+          <FormSection icon={UserRound} tour="customer-details" title={<>Customer Details <span className="text-sm font-medium text-primary">(mobile required)</span></>}>
             <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
               <Field label="Customer Mobile *" htmlFor="customerMobile" error={mobileError}>
                 <IconInput
@@ -277,10 +312,7 @@ export default function CreateReceipt() {
             </label>
           </FormSection>
 
-          <div className="card-soft flex flex-wrap items-center justify-between gap-3 p-4">
-            <Button onClick={handleReset} variant="outline" className="group">
-              <RotateCcw className="transition-transform duration-500 group-hover:-rotate-180" /> Reset
-            </Button>
+          <div className="card-soft flex flex-wrap items-center justify-end gap-3 p-4" data-tour="print-actions">
             <div className="flex flex-wrap gap-3">
               <Button onClick={handleSave} variant="secondary" disabled={saving || !!savedReceipt}>
                 <Save /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
@@ -295,6 +327,7 @@ export default function CreateReceipt() {
         {/* Preview */}
         <LivePreviewPanel
           className="animate-fade-in-up [animation-delay:0.15s]"
+          tour="live-preview"
           footer={
             <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving} className="w-full rounded-full">
               <Printer /> Print Receipt
@@ -303,8 +336,8 @@ export default function CreateReceipt() {
         >
           <div className="print-area">
             <div className={dualReceipt ? 'grid grid-cols-2 gap-2' : ''}>
-              <ReceiptPreview data={receipt} business={business} compact />
-              {dualReceipt && <ReceiptPreview data={receipt} business={business} compact />}
+              <ReceiptPreview data={{ ...receipt, maskAccountNumber: maskAccount }} business={business} compact />
+              {dualReceipt && <ReceiptPreview data={{ ...receipt, maskAccountNumber: maskAccount }} business={business} compact />}
             </div>
           </div>
         </LivePreviewPanel>
@@ -319,7 +352,7 @@ export default function CreateReceipt() {
             <DialogDescription>Please review all details before printing. The receipt will be saved automatically.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 rounded-xl bg-accent/50 p-4 text-sm">
-            <p className="flex justify-between gap-4"><span className="text-muted-foreground">Account</span><strong className="text-right">{receipt.accountHolder} ({receipt.accountNumber})</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-muted-foreground">Account</span><strong className="text-right">{receipt.accountHolder} ({maskAccount ? maskAccountNumber(receipt.accountNumber || '') : receipt.accountNumber})</strong></p>
             <p className="flex justify-between gap-4"><span className="text-muted-foreground">Amount</span><strong>{formatInr(receipt.amount || 0)}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-muted-foreground">IFSC</span><strong>{receipt.ifscCode}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-muted-foreground">Date</span><strong>{receipt.date}</strong></p>

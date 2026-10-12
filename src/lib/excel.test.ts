@@ -24,7 +24,7 @@ describe('buildReceiptRows', () => {
     );
     expect(Object.keys(rows[0])).toEqual([
       'Serial No', 'Account Holder', 'Account Number', 'Bank Name', 'IFSC Code', 'Amount (₹)', 'Date',
-      'Transaction ID', 'Reference No', 'Customer Mobile', 'Status', 'Branch Name', 'Agent Code', 'Notes', 'Created At',
+      'Reference No', 'Customer Mobile', 'Status', 'Branch Name', 'Agent Code', 'Notes', 'Created At',
     ]);
     expect(rows[0]).toMatchObject({
       'Bank Name': 'State Bank of India',
