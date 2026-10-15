@@ -37,6 +37,8 @@ export default function EditReceipt() {
   const { toast } = useToast();
   const business = useBusinessInfo();
   const { user } = useAuth();
+  // A deactivated account is read-only: the server refuses new and edited receipts.
+  const deactivated = !!useAuth().user?.deactivatedAt;
   const customFieldDefs = user?.customFields || [];
   // Users with an app passcode enter it each time they open a receipt for editing.
   const [passcodeOk, setPasscodeOk] = useState(false);
@@ -237,10 +239,10 @@ export default function EditReceipt() {
           </FormSection>
 
           <div className="card-soft flex flex-wrap items-center justify-end gap-3 p-4">
-            <Button onClick={() => save(false)} variant="secondary" disabled={saving}>
+            <Button onClick={() => save(false)} variant="secondary" disabled={saving || deactivated}>
               <Save /> Save Changes
             </Button>
-            <Button onClick={handlePrint} disabled={saving} className="px-6">
+            <Button onClick={handlePrint} disabled={saving || deactivated} className="px-6">
               <Printer /> Save & Print
             </Button>
           </div>
@@ -250,7 +252,7 @@ export default function EditReceipt() {
           title="Preview"
           className="animate-fade-in-up [animation-delay:0.15s]"
           footer={
-            <Button onClick={handlePrint} disabled={saving} className="w-full rounded-full">
+            <Button onClick={handlePrint} disabled={saving || deactivated} className="w-full rounded-full">
               <Printer /> Print Receipt
             </Button>
           }

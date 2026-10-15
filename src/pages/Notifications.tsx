@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Bell, CheckCheck, Megaphone, Newspaper } from 'lucide-react';
+import { Bell, CheckCheck, Megaphone, Newspaper, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, Spinner } from '@/components/EmptyState';
 import { AnnouncementLink } from '@/components/AnnouncementCard';
@@ -25,7 +25,8 @@ const filters: { value: Filter; label: string }[] = [
 function NotificationRow({ n, onOpen }: { n: AppNotification; onOpen: () => void }) {
   const isBlog = n.type === 'blog';
   const meta = announcementMeta(n.tag);
-  const Icon = isBlog ? Newspaper : meta.icon;
+  const isAccount = n.type === 'account';
+  const Icon = isBlog ? Newspaper : isAccount ? (n.tag === 'warning' ? ShieldAlert : ShieldCheck) : meta.icon;
   return (
     <div
       className={cn(
@@ -43,7 +44,7 @@ function NotificationRow({ n, onOpen }: { n: AppNotification; onOpen: () => void
         <div className="flex flex-wrap items-center gap-2">
           <p className={cn('text-navy', n.read ? 'font-semibold' : 'font-extrabold')}>{n.title}</p>
           {isBlog ? <TagBadge tag={n.tag} className="py-0.5" /> : (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Announcement</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{isAccount ? 'Account' : 'Announcement'}</span>
           )}
           {!n.read && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">New</span>}
         </div>

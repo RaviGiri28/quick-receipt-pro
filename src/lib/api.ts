@@ -53,6 +53,13 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
+// Called when the server refuses a request because an admin deactivated the account,
+// so the app can reload the profile and show the deactivation notice.
+let onDeactivated: (() => void) | null = null;
+export function setDeactivatedHandler(handler: (() => void) | null) {
+  onDeactivated = handler;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
@@ -76,6 +83,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && token) onUnauthorized?.();
+    if (res.status === 403 && data?.code === 'ACCOUNT_DEACTIVATED') onDeactivated?.();
     throw new ApiError(data?.message || `Request failed (${res.status})`, res.status, data);
   }
   return data as T;
@@ -130,6 +138,7 @@ interface ApiUser {
   terms_version?: string | null;
   terms_current?: string;
   has_passcode?: boolean;
+  deactivated_at?: string | null;
 }
 
 export const assetUrl = (path?: string | null) =>
@@ -152,6 +161,7 @@ export function userFromApi(u: ApiUser): UserProfile {
     // Only the profile endpoint reports these; elsewhere the user counts as up to date.
     termsAccepted: u.terms_current === undefined || u.terms_version === u.terms_current,
     hasPasscode: !!u.has_passcode,
+    deactivatedAt: u.deactivated_at ?? null,
   };
 }
 
@@ -531,7 +541,8 @@ export const announcementsApi = {
 // ---------------------------------------------------------------------------
 
 export interface AppNotification {
-  type: 'blog' | 'announcement';
+  // 'account': the latest admin action on the user's own account (deactivated/reactivated).
+  type: 'blog' | 'announcement' | 'account';
   id: number;
   title: string;
   body: string;
@@ -539,7 +550,7 @@ export interface AppNotification {
   tag: string;
   published_at: string;
   read: boolean;
-  // Announcements only.
+  // Announcements and account notices only.
   link_url?: string | null;
   link_label?: string | null;
 }
@@ -579,7 +590,40 @@ function blogForm(data: BlogPostInput) {
   return form;
 }
 
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  phone_number: string;
+  business_name: string;
+  business_logo: string | null;
+  created_at: string;
+  last_active_at: string | null;
+  deactivated_at: string | null;
+  deletion_requested_at: string | null;
+  receipt_count: number;
+  is_admin: boolean;
+}
+
+export type AdminUserStatusFilter = 'all' | 'active' | 'deactivated';
+
+export interface AdminUserList {
+  users: AdminUser[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+  stats: { total: number; active: number; deactivated: number; new_this_week: number };
+}
+
 export const adminApi = {
+  listUsers: (params: { search?: string; status?: AdminUserStatusFilter; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') query.set(key, String(value));
+    });
+    return request<AdminUserList>('GET', `/api/admin/users?${query}`);
+  },
+  setUserDeactivated: async (id: number, deactivated: boolean) =>
+    (await request<{ user: AdminUser }>('PUT', `/api/admin/users/${id}/status`, { deactivated })).user,
+
   listPosts: async () => (await request<{ posts: AdminBlogPost[] }>('GET', '/api/admin/blog')).posts,
   getPost: async (id: number) => (await request<{ post: AdminBlogPost }>('GET', `/api/admin/blog/${id}`)).post,
   createPost: async (data: BlogPostInput) =>

@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomFieldDef, UserProfile } from '@/types/receipt';
 import {
-  authApi, clearToken, getToken, setToken, setUnauthorizedHandler,
+  authApi, clearToken, getToken, setToken, setUnauthorizedHandler, setDeactivatedHandler,
   ApiError, ProfileUpdate, SignupData,
 } from '@/lib/api';
 import { getSettings, saveSettings } from '@/lib/storage';
@@ -47,6 +47,8 @@ interface AuthContextType {
   // App passcode: set or change (the current one is needed to change it), or remove with the password.
   setPasscode: (passcode: string, currentPasscode?: string) => Promise<void>;
   removePasscode: (password: string) => Promise<void>;
+  // Reloads the profile in the background (e.g. to pick up an admin deactivating the account).
+  refreshProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -93,6 +95,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
+
+  // Background refresh that never logs out or shows an error; at most every 30 seconds.
+  const lastRefresh = useRef(0);
+  const refreshProfile = useCallback(() => {
+    if (!getToken() || Date.now() - lastRefresh.current < 30_000) return;
+    lastRefresh.current = Date.now();
+    authApi.profile()
+      .then(profile => setUser(prev => (prev && prev.id === profile.id ? { ...prev, deactivatedAt: profile.deactivatedAt } : prev)))
+      .catch(() => {});
+  }, []);
+
+  // An admin can deactivate or reactivate the account while it is open: pick that up when
+  // the server refuses a request because of it, and whenever the user comes back to the tab.
+  useEffect(() => {
+    const onDeactivated = () => {
+      lastRefresh.current = 0;
+      refreshProfile();
+    };
+    setDeactivatedHandler(onDeactivated);
+    window.addEventListener('focus', refreshProfile);
+    return () => {
+      setDeactivatedHandler(null);
+      window.removeEventListener('focus', refreshProfile);
+    };
+  }, [refreshProfile]);
 
   const startSession = async (token: string, remember: boolean) => {
     setToken(token, remember);
@@ -158,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -184,6 +211,7 @@ export function useAuth() {
       deleteAccount: async () => '',
       setPasscode: async () => {},
       removePasscode: async () => {},
+      refreshProfile: () => {},
     } as AuthContextType;
   }
   return ctx;

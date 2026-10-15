@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { TermsGate } from '@/components/TermsGate';
+import { DeactivatedNotice } from '@/components/DeactivatedNotice';
 import { PasscodeLock } from '@/components/PasscodeLock';
 import { isUnlocked } from '@/lib/appLock';
 import { Logo } from '@/components/brand/Logo';
@@ -157,7 +158,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-[1400px]">{children}</div>
+            <div className="mx-auto w-full max-w-[1400px]">
+              <DeactivatedNotice />
+              {children}
+            </div>
           </div>
         </main>
       </div>

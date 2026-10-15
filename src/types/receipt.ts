@@ -48,6 +48,8 @@ export interface UserProfile {
   termsAccepted: boolean;
   // Has a 4-digit app passcode (asked when the app opens and before deleting a receipt).
   hasPasscode: boolean;
+  // When an admin deactivated the account (read-only: no new or edited receipts); null = active.
+  deactivatedAt: string | null;
 }
 
 export interface CustomFieldDef {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Bell, CheckCheck, Megaphone, Newspaper } from 'lucide-react';
+import { Bell, CheckCheck, Megaphone, Newspaper, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { badgeText } from '@/lib/blog';
 
 export function NotificationItem({ n, onOpen, compact }: { n: AppNotification; onOpen: () => void; compact?: boolean }) {
-  const Icon = n.type === 'blog' ? Newspaper : Megaphone;
+  const Icon = n.type === 'blog' ? Newspaper : n.type === 'account' ? (n.tag === 'warning' ? ShieldAlert : ShieldCheck) : Megaphone;
   return (
     <button
       onClick={onOpen}
@@ -32,7 +32,7 @@ export function NotificationItem({ n, onOpen, compact }: { n: AppNotification; o
         </span>
         <span className={cn('mt-0.5 block text-xs text-muted-foreground', compact ? 'line-clamp-2' : 'whitespace-pre-line')}>{n.body}</span>
         <span className="mt-1 block text-[11px] font-medium text-muted-foreground/80">
-          {n.type === 'blog' ? 'Blog' : 'Announcement'} · {formatDistanceToNow(new Date(n.published_at), { addSuffix: true })}
+          {n.type === 'blog' ? 'Blog' : n.type === 'account' ? 'Account' : 'Announcement'} · {formatDistanceToNow(new Date(n.published_at), { addSuffix: true })}
         </span>
       </span>
     </button>

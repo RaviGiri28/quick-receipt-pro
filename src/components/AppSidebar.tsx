@@ -1,5 +1,5 @@
 import {
-  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, HelpCircle, Newspaper, Bell, PenSquare, Megaphone,
+  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, HelpCircle, Newspaper, Bell, PenSquare, Megaphone, Users,
   type LucideIcon,
 } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -44,6 +44,7 @@ const activeClass =
   '!bg-white/[0.16] !text-white font-semibold shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] ring-1 ring-white/20 hover:!translate-x-0';
 
 const adminNav: NavItem[] = [
+  { title: 'Users', url: '/admin/users', icon: Users },
   { title: 'Publish Blog', url: '/admin/blog', icon: PenSquare },
   { title: 'Announcements', url: '/admin/announcements', icon: Megaphone },
 ];

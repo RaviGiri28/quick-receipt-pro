@@ -39,6 +39,8 @@ export default function CreateReceipt() {
   const { toast } = useToast();
   const settings = getSettings();
   const customFieldDefs = useAuth().user?.customFields || [];
+  // A deactivated account is read-only: the server refuses new and edited receipts.
+  const deactivated = !!useAuth().user?.deactivatedAt;
   const business = useBusinessInfo();
 
   const [receipt, setReceipt] = useState<Partial<ReceiptData>>({
@@ -314,10 +316,10 @@ export default function CreateReceipt() {
 
           <div className="card-soft flex flex-wrap items-center justify-end gap-3 p-4" data-tour="print-actions">
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleSave} variant="secondary" disabled={saving || !!savedReceipt}>
+              <Button onClick={handleSave} variant="secondary" disabled={saving || !!savedReceipt || deactivated}>
                 <Save /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
               </Button>
-              <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving} className="group px-6">
+              <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving || deactivated} className="group px-6">
                 <Printer /> Generate & Print <ArrowRight className="transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
@@ -329,7 +331,7 @@ export default function CreateReceipt() {
           className="animate-fade-in-up [animation-delay:0.15s]"
           tour="live-preview"
           footer={
-            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving} className="w-full rounded-full">
+            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving || deactivated} className="w-full rounded-full">
               <Printer /> Print Receipt
             </Button>
           }
@@ -360,7 +362,7 @@ export default function CreateReceipt() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowPrintDialog(false)}>Cancel</Button>
-            <Button onClick={confirmPrint} disabled={saving}><Printer /> Confirm & Print</Button>
+            <Button onClick={confirmPrint} disabled={saving || deactivated}><Printer /> Confirm & Print</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
