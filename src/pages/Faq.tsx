@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTour } from '@/hooks/use-tour';
 import {
   HelpCircle, Search, ClipboardPaste, Eye, Printer, History, Store, Rocket, FileText, ShieldCheck, Settings2,
-  LifeBuoy, ArrowRight, SearchX, PlayCircle, type LucideIcon,
+  LifeBuoy, ArrowRight, SearchX, PlayCircle, Clapperboard, type LucideIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DELETION_GRACE_DAYS } from '@/lib/legal';
 import { cn } from '@/lib/utils';
+
+// Hinglish demo video (create & print a receipt), hosted on Cloudinary. so_3 = poster frame at 3s.
+const DEMO_VIDEO_URL = 'https://res.cloudinary.com/lgn4wnq1/video/upload/v1792094531/receiptor/demo/quickreceipt-demo-hinglish.mp4';
+const DEMO_POSTER_URL = 'https://res.cloudinary.com/lgn4wnq1/video/upload/so_3,w_1280,q_auto/v1792094531/receiptor/demo/quickreceipt-demo-hinglish.jpg';
+
+const scrollToDemoVideo = () =>
+  document.getElementById('demo-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 type Category = 'Getting started' | 'Receipts' | 'Printing' | 'Security' | 'Account';
 
@@ -51,9 +58,16 @@ const faqs: Faq[] = [
     category: 'Getting started',
     icon: Rocket,
     question: 'How do I use this portal?',
-    keywords: 'how to use start begin guide steps profile smart paste print save history',
+    keywords: 'how to use start begin guide steps profile smart paste print save history video demo tutorial watch',
     answer: (
       <ol className="list-decimal space-y-1.5 pl-5">
+        <li>
+          Prefer to watch?{' '}
+          <button type="button" onClick={scrollToDemoVideo} className="font-semibold text-primary hover:underline">
+            Watch the demo video
+          </button>{' '}
+          (Hinglish, about 1.5 minutes).
+        </li>
         <li>Fill in your business details and logo in <A to="/profile">Profile</A>.</li>
         <li>Go to <A to="/create">Create Receipt</A> and paste the transaction details into <b>Smart Paste</b>.</li>
         <li>Check the auto-filled fields and the live preview, and add the customer mobile number.</li>
@@ -212,6 +226,29 @@ export default function FaqPage() {
         title="FAQs"
         description="Quick answers about creating, printing and managing your receipts."
       />
+
+      {/* Demo video */}
+      <section id="demo-video" className="card-soft animate-fade-in-up scroll-mt-20 overflow-hidden p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="icon-tile h-11 w-11"><Clapperboard className="h-5 w-5" /></span>
+          <div>
+            <h2 className="text-lg font-bold text-navy">Watch the demo</h2>
+            <p className="text-sm text-muted-foreground">See how to create and print a receipt in about 1.5 minutes (Hinglish).</p>
+          </div>
+        </div>
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border bg-black shadow-sm">
+          <video
+            className="aspect-video w-full"
+            src={DEMO_VIDEO_URL}
+            poster={DEMO_POSTER_URL}
+            controls
+            playsInline
+            preload="none"
+          >
+            Your browser cannot play this video.
+          </video>
+        </div>
+      </section>
 
       {/* How to use: step-by-step guide */}
       <section className="card-soft animate-fade-in-up overflow-hidden p-5 sm:p-6">

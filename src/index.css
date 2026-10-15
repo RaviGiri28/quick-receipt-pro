@@ -370,13 +370,22 @@
   .print-area .receipt-card .receipt-footer-note p {
     margin-top: 0.3mm !important;
   }
-  /* The "* { font-size: inherit }" rule above would shrink the watermark to body size,
-     and 6% opacity doesn't show on thermal paper. */
+  /* The "* { font-size: inherit }" rule above would shrink the watermark to body size.
+     Thermal printers are 1-bit: any grey/translucent fill gets dithered into random black
+     specks. So print the watermark as hollow outline letters with a thin solid-black
+     stroke (~1-2 printer dots), which prints crisp and keeps the text underneath readable.
+     Arial because the app font's overlapping glyph contours show up as stray lines when stroked. */
   .print-area .receipt-card .watermark {
-    font-size: 22pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 24pt !important;
     line-height: 1 !important;
-    opacity: 0.12 !important;
-    color: #000 !important;
+    font-weight: 900 !important;
+    opacity: 1 !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    -webkit-text-stroke: 0.45pt #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .print-area .receipt-card .receipt-powered {
     font-size: 5.5pt !important;
