@@ -10,7 +10,7 @@ import { LogoMark } from '@/components/brand/Logo';
 import { AuthBackground, HandNote } from '@/components/AuthDecor';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Eye, EyeOff, Upload, User, Mail, Lock, Store, MapPin, Phone, Smartphone, UserPlus, Rocket, Zap, ShieldCheck, Printer,
+  Eye, EyeOff, Upload, User, Mail, Lock, Store, MapPin, Phone, Smartphone, UserPlus, Rocket, Zap, ShieldCheck, Printer, Ticket, Gift,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
@@ -38,7 +38,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [form, setForm] = useState({
     name: '', email: '', password: '', confirmPassword: '',
-    businessName: '', phone: '', businessAddress: '', businessPhone: '',
+    businessName: '', phone: '', businessAddress: '', businessPhone: '', couponCode: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -82,9 +82,12 @@ export default function SignupPage() {
     }
     setSubmitting(true);
     try {
-      await signup({ ...form, logo: logoFile, acceptedTermsVersion: TERMS_VERSION });
-      trackEvent('sign_up', { method: 'email' });
-      toast({ title: '✅ Account created successfully', description: 'Please login to enter Quick Receipt.' });
+      const trialDays = await signup({ ...form, logo: logoFile, acceptedTermsVersion: TERMS_VERSION });
+      trackEvent('sign_up', { method: 'email', coupon: !!form.couponCode.trim() });
+      toast({
+        title: '✅ Account created successfully',
+        description: `Please login to enter Quick Receipt. Your ${trialDays}-day free trial starts when you log in.`,
+      });
       navigate('/login');
     } catch (err) {
       toast({ title: 'Signup failed', description: errorMessage(err), variant: 'destructive' });
@@ -192,6 +195,21 @@ export default function SignupPage() {
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
               </label>
             </div>
+            <Field label="Coupon Code (optional)" htmlFor="couponCode">
+              <IconInput
+                id="couponCode"
+                icon={Ticket}
+                value={form.couponCode}
+                onChange={e => update('couponCode', e.target.value.toUpperCase())}
+                placeholder="Enter coupon code"
+                maxLength={30}
+                className="font-semibold uppercase tracking-wider"
+              />
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Gift className="h-3.5 w-3.5 text-primary" />
+                Every new account gets a 7-day free trial. A coupon can give you more.
+              </p>
+            </Field>
             <label htmlFor="acceptTerms" className="flex cursor-pointer items-start gap-3 rounded-xl border bg-accent/40 p-3.5 text-sm">
               <Checkbox id="acceptTerms" checked={acceptedTerms} onCheckedChange={v => setAcceptedTerms(!!v)} className="mt-0.5 h-5 w-5 rounded-md" />
               <span className="text-muted-foreground">

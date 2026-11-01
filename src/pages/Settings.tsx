@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getSettings, saveSettings } from '@/lib/storage';
-import { AppSettings, CustomFieldDef, ReceiptData } from '@/types/receipt';
+import { AppSettings, CustomFieldDef, PrintAlign, ReceiptData } from '@/types/receipt';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { errorMessage } from '@/lib/api';
@@ -17,7 +17,8 @@ import { PasscodeSettings } from '@/components/PasscodeSettings';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { analyticsConfigured, isAnalyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import {
-  Save, Plus, Trash2, Settings as SettingsIcon, Eye, Store, FileText, Copy, Palette, Tag, BarChart3, ShieldCheck, type LucideIcon,
+  Save, Plus, Trash2, Settings as SettingsIcon, Eye, Store, FileText, Copy, Palette, Tag, BarChart3, ShieldCheck,
+  AlignLeft, AlignCenter, AlignRight, Printer, type LucideIcon,
 } from 'lucide-react';
 
 const MAX_CUSTOM_FIELDS = 20;
@@ -30,6 +31,12 @@ const colorPresets = [
   { name: 'Purple', value: '262 60% 45%' },
   { name: 'Crimson', value: '350 72% 42%' },
   { name: 'Charcoal', value: '222 25% 20%' },
+];
+
+const printAligns: { value: PrintAlign; label: string; icon: LucideIcon }[] = [
+  { value: 'left', label: 'Left', icon: AlignLeft },
+  { value: 'center', label: 'Center', icon: AlignCenter },
+  { value: 'right', label: 'Right', icon: AlignRight },
 ];
 
 const sampleReceipt: Partial<ReceiptData> = {
@@ -122,6 +129,32 @@ export default function SettingsPage() {
                   />
                 </label>
               ))}
+              <div className="flex flex-wrap items-center gap-4 py-4 last:pb-0">
+                <span className="icon-tile h-10 w-10 bg-transparent text-navy/70"><Printer className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-navy">Single receipt position</span>
+                  <span className="block text-sm text-muted-foreground">Where a single receipt is printed on the page (dual receipts use the full width)</span>
+                </span>
+                <div role="radiogroup" aria-label="Single receipt position" className="flex rounded-xl border bg-accent/40 p-1">
+                  {printAligns.map(a => {
+                    const active = (settings.printAlign || 'left') === a.value;
+                    return (
+                      <button
+                        key={a.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setSettings(prev => ({ ...prev, printAlign: a.value }))}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                          active ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-primary'
+                        }`}
+                      >
+                        <a.icon className="h-4 w-4" /> {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </FormSection>
 

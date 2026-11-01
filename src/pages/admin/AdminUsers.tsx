@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import { Search, ShieldAlert, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { Clock, Crown, Search, ShieldAlert, ShieldCheck, TimerOff, UserPlus, Users } from 'lucide-react';
 import {
-  adminApi, assetUrl, errorMessage, type AdminUser, type AdminUserStatusFilter,
+  adminApi, assetUrl, errorMessage, type AdminPlanAction, type AdminPlanFilter, type AdminUser, type AdminUserStatusFilter, type Plan,
 } from '@/lib/api';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
@@ -12,11 +12,20 @@ import { EmptyState, Spinner } from '@/components/EmptyState';
 import { Pager } from '@/components/Pager';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { PersonalCoupons } from './PersonalCoupons';
 
 const PAGE_SIZE = 20;
 
@@ -26,8 +35,133 @@ const filters: { value: AdminUserStatusFilter; label: string }[] = [
   { value: 'deactivated', label: 'Deactivated' },
 ];
 
+const planFilters: { value: AdminPlanFilter; label: string }[] = [
+  { value: 'all', label: 'Any plan' },
+  { value: 'trial', label: 'On trial' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'expired', label: 'Expired' },
+  { value: 'none', label: 'No plan yet' },
+];
+
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const formatDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+function PlanBadge({ user, plans }: { user: AdminUser; plans: Plan[] }) {
+  const s = user.subscription;
+  const planName = plans.find(p => p.id === s.plan_id)?.name;
+  const [label, className] = s.status === 'admin'
+    ? ['Admin', 'bg-primary/10 text-primary']
+    : s.status === 'paid'
+      ? [`Paid${planName ? ` · ${planName}` : ''}`, 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400']
+      : s.status === 'trial'
+        ? ['Trial', 'bg-sky-500/10 text-sky-700 dark:text-sky-400']
+        : s.status === 'expired'
+          ? [s.plan === 'paid' ? 'Plan ended' : 'Trial ended', 'bg-red-500/10 text-red-700 dark:text-red-400']
+          : [user.trial_days_pending ? `${user.trial_days_pending}-day trial (not logged in yet)` : 'No plan', 'bg-muted text-muted-foreground'];
+  return (
+    <div>
+      <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold', className)}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {label}
+      </span>
+      {s.expires_at && s.status !== 'admin' && (
+        <p className="mt-1 whitespace-nowrap text-[11px] text-muted-foreground">
+          {s.status === 'expired' ? 'ended' : 'until'} {formatDateTime(s.expires_at)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PlanDialog({ user, plans, onClose }: { user: AdminUser | null; plans: Plan[]; onClose: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [planId, setPlanId] = useState('');
+  const [days, setDays] = useState('7');
+
+  const change = useMutation({
+    mutationFn: (action: AdminPlanAction) => adminApi.setUserPlan(user!.id, action),
+    onSuccess: ({ message, user: updated }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast({
+        title: message,
+        description: updated.subscription.expires_at
+          ? `${updated.name}: ${updated.subscription.status === 'expired' ? 'ended' : 'active until'} ${formatDateTime(updated.subscription.expires_at)}.`
+          : undefined,
+      });
+      onClose();
+    },
+    onError: (err) => toast({ title: 'Could not change the plan', description: errorMessage(err), variant: 'destructive' }),
+  });
+
+  const selectedPlan = plans.find(p => p.id === planId) ?? plans[0];
+  const running = user && (user.subscription.status === 'trial' || user.subscription.status === 'paid');
+
+  return (
+    <Dialog open={!!user} onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-h-[92vh] max-w-md overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Manage · {user?.name}</DialogTitle>
+          <DialogDescription>{user?.email}</DialogDescription>
+        </DialogHeader>
+        {user && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            Current: <PlanBadge user={user} plans={plans} />
+          </div>
+        )}
+
+        <div className="space-y-3 rounded-xl border p-4">
+          <p className="flex items-center gap-2 font-semibold text-navy"><Crown className="h-4 w-4 text-emerald-600" /> Activate a paid plan</p>
+          <p className="text-xs text-muted-foreground">For payments received directly (cash / UPI). Days left on the current plan are kept.</p>
+          <div className="flex gap-2">
+            <Select value={selectedPlan?.id ?? ''} onValueChange={setPlanId}>
+              <SelectTrigger className="flex-1"><SelectValue placeholder="Choose plan" /></SelectTrigger>
+              <SelectContent>
+                {plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} · ₹{p.price.toLocaleString('en-IN')} · {p.days} days</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button
+              disabled={!selectedPlan || change.isPending}
+              onClick={() => selectedPlan && change.mutate({ action: 'grant_paid', plan_id: selectedPlan.id })}
+            >
+              Activate
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border p-4">
+          <Label htmlFor="trial-days" className="flex items-center gap-2 font-semibold text-navy"><Clock className="h-4 w-4 text-sky-600" /> Add free trial days</Label>
+          <div className="flex gap-2">
+            <Input id="trial-days" type="number" min={1} max={365} value={days} onChange={e => setDays(e.target.value)} className="flex-1" />
+            <Button
+              variant="outline"
+              disabled={change.isPending || !(Number(days) >= 1 && Number(days) <= 365)}
+              onClick={() => change.mutate({ action: 'add_trial', days: Number(days) })}
+            >
+              Add days
+            </Button>
+          </div>
+        </div>
+
+        {running && (
+          <Button
+            variant="outline"
+            className="w-full border-red-500/40 text-red-700 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400"
+            disabled={change.isPending}
+            onClick={() => change.mutate({ action: 'expire' })}
+          >
+            <TimerOff /> End the current {user?.subscription.status === 'paid' ? 'plan' : 'trial'} now
+          </Button>
+        )}
+
+        {user && <PersonalCoupons user={user} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function StatusBadge({ user }: { user: AdminUser }) {
   const [label, className] = user.deletion_requested_at
@@ -72,13 +206,15 @@ export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<AdminUserStatusFilter>('all');
+  const [plan, setPlan] = useState<AdminPlanFilter>('all');
+  const [managing, setManaging] = useState<AdminUser | null>(null);
   const [page, setPage] = useState(1);
   const [confirming, setConfirming] = useState<AdminUser | null>(null);
   const debouncedSearch = useDebounce(search.trim(), 350);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['admin', 'users', debouncedSearch, status, page],
-    queryFn: () => adminApi.listUsers({ search: debouncedSearch, status, page, limit: PAGE_SIZE }),
+    queryKey: ['admin', 'users', debouncedSearch, status, plan, page],
+    queryFn: () => adminApi.listUsers({ search: debouncedSearch, status, plan, page, limit: PAGE_SIZE }),
     placeholderData: keepPreviousData,
   });
 
@@ -102,6 +238,7 @@ export default function AdminUsersPage() {
   };
 
   const users = data?.users || [];
+  const plans = data?.plans || [];
 
   return (
     <div className="space-y-6">
@@ -110,7 +247,7 @@ export default function AdminUsersPage() {
         icon={Users}
         eyebrow="Admin"
         title="Users"
-        description="Everyone who has signed up. Deactivate an account to stop it creating receipts."
+        description="Everyone who has signed up, their trial or plan, and account status."
       />
 
       <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -118,6 +255,11 @@ export default function AdminUsersPage() {
         <StatTile icon={ShieldCheck} label="Active" value={data?.stats.active} className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" />
         <StatTile icon={ShieldAlert} label="Deactivated" value={data?.stats.deactivated} className="bg-amber-500/15 text-amber-700 dark:text-amber-400" />
         <StatTile icon={UserPlus} label="New this week" value={data?.stats.new_this_week} className="bg-sky-500/15 text-sky-700 dark:text-sky-400" />
+      </div>
+      <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatTile icon={Clock} label="On free trial" value={data?.stats.on_trial} className="bg-sky-500/15 text-sky-700 dark:text-sky-400" />
+        <StatTile icon={Crown} label="Paid" value={data?.stats.paid} className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" />
+        <StatTile icon={TimerOff} label="Trial / plan ended" value={data?.stats.expired} className="bg-red-500/15 text-red-700 dark:text-red-400" />
       </div>
 
       <section className="card-soft animate-fade-in-up space-y-4 p-5 sm:p-6">
@@ -150,6 +292,23 @@ export default function AdminUsersPage() {
             ))}
           </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+          {planFilters.map(f => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => { setPlan(f.value); setPage(1); }}
+              className={cn(
+                'rounded-full border px-3.5 py-1 text-xs font-semibold transition-all duration-200',
+                plan === f.value
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         {isLoading && <Spinner />}
         {!isLoading && (isError || users.length === 0) && (
@@ -162,7 +321,7 @@ export default function AdminUsersPage() {
 
         {users.length > 0 && (
           <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-[1100px] text-sm">
               <thead className="bg-accent/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">User</th>
@@ -170,6 +329,7 @@ export default function AdminUsersPage() {
                   <th className="px-4 py-3">Joined</th>
                   <th className="px-4 py-3">Last active</th>
                   <th className="px-4 py-3 text-right">Receipts</th>
+                  <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-center">Deactivate</th>
                 </tr>
@@ -200,6 +360,16 @@ export default function AdminUsersPage() {
                         {u.last_active_at ? formatDistanceToNow(new Date(u.last_active_at), { addSuffix: true }) : 'Never'}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-navy">{u.receipt_count}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <PlanBadge user={u} plans={plans} />
+                          {!u.is_admin && (
+                            <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={() => setManaging(u)}>
+                              Manage
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge user={u} />
                         {u.deactivated_at && (
@@ -234,6 +404,8 @@ export default function AdminUsersPage() {
           />
         )}
       </section>
+
+      <PlanDialog key={managing?.id ?? 'none'} user={managing} plans={plans} onClose={() => setManaging(null)} />
 
       <AlertDialog open={!!confirming} onOpenChange={o => { if (!o) setConfirming(null); }}>
         <AlertDialogContent>

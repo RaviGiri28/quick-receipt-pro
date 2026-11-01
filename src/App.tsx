@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
@@ -31,6 +32,7 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import BlogEditor from "./pages/admin/BlogEditor";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCoupons from "./pages/admin/AdminCoupons";
 import { BlogShell, PublicShell } from "@/components/BlogShell";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
@@ -53,6 +55,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <SubscriptionProvider>
             <AnalyticsTracker />
             <TourProvider>
             <Routes>
@@ -83,9 +86,11 @@ const App = () => (
               <Route path="/admin/blog/:id/edit" element={<AppLayout><AdminRoute><BlogEditor /></AdminRoute></AppLayout>} />
               <Route path="/admin/announcements" element={<AppLayout><AdminRoute><AdminAnnouncements /></AdminRoute></AppLayout>} />
               <Route path="/admin/users" element={<AppLayout><AdminRoute><AdminUsers /></AdminRoute></AppLayout>} />
+              <Route path="/admin/coupons" element={<AppLayout><AdminRoute><AdminCoupons /></AdminRoute></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </TourProvider>
+            </SubscriptionProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

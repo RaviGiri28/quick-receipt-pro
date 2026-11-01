@@ -22,6 +22,7 @@ import { getSettings, saveSettings } from '@/lib/storage';
 import { receiptsApi, errorMessage } from '@/lib/api';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateReceipt } from '@/lib/receiptValidation';
 import { ReceiptData, defaultReceipt } from '@/types/receipt';
 import {
@@ -41,6 +42,8 @@ export default function CreateReceipt() {
   const customFieldDefs = useAuth().user?.customFields || [];
   // A deactivated account is read-only: the server refuses new and edited receipts.
   const deactivated = !!useAuth().user?.deactivatedAt;
+  // Without an active trial or plan, the save and print buttons open the upgrade screen.
+  const { canCreate, openPaywall } = useSubscription();
   const business = useBusinessInfo();
 
   const [receipt, setReceipt] = useState<Partial<ReceiptData>>({
@@ -175,7 +178,13 @@ export default function CreateReceipt() {
     }
   };
 
+  const openPrintDialog = () => {
+    if (!canCreate) return openPaywall();
+    if (checkValid()) setShowPrintDialog(true);
+  };
+
   const handleSave = async () => {
+    if (!canCreate) return openPaywall();
     const saved = await doSave('saved');
     if (!saved) return;
     trackEvent('receipt_saved', { source: 'create' });
@@ -319,7 +328,7 @@ export default function CreateReceipt() {
               <Button onClick={handleSave} variant="secondary" disabled={saving || !!savedReceipt || deactivated}>
                 <Save /> {savedReceipt ? `Saved #${savedReceipt.serialNumber}` : 'Save Receipt'}
               </Button>
-              <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving || deactivated} className="group px-6">
+              <Button onClick={openPrintDialog} disabled={saving || deactivated} className="group px-6">
                 <Printer /> Generate & Print <ArrowRight className="transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
@@ -331,7 +340,7 @@ export default function CreateReceipt() {
           className="animate-fade-in-up [animation-delay:0.15s]"
           tour="live-preview"
           footer={
-            <Button onClick={() => { if (checkValid()) setShowPrintDialog(true); }} disabled={saving || deactivated} className="w-full rounded-full">
+            <Button onClick={openPrintDialog} disabled={saving || deactivated} className="w-full rounded-full">
               <Printer /> Print Receipt
             </Button>
           }

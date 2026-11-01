@@ -19,6 +19,7 @@ import { getSettings } from '@/lib/storage';
 import { MOBILE_ERROR, isValidIndianMobile, normalizeIndianMobile, validateReceipt } from '@/lib/receiptValidation';
 import { useBusinessInfo } from '@/hooks/use-business-info';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ReceiptData } from '@/types/receipt';
 import {
   Save, Printer, ArrowLeft, FileText, UserRound, User, Landmark, IndianRupee, CalendarDays,
@@ -39,6 +40,8 @@ export default function EditReceipt() {
   const { user } = useAuth();
   // A deactivated account is read-only: the server refuses new and edited receipts.
   const deactivated = !!useAuth().user?.deactivatedAt;
+  // Without an active trial or plan, saving opens the upgrade screen.
+  const { canCreate, openPaywall } = useSubscription();
   const customFieldDefs = user?.customFields || [];
   // Users with an app passcode enter it each time they open a receipt for editing.
   const [passcodeOk, setPasscodeOk] = useState(false);
@@ -104,6 +107,10 @@ export default function EditReceipt() {
   // Saves the edits without moving the receipt between lists. Printing adds it to History;
   // a Success one also leaves Saved Receipts, a Pending one stays in both.
   const save = async (print: boolean): Promise<boolean> => {
+    if (!canCreate) {
+      openPaywall();
+      return false;
+    }
     const problem = validateReceipt(receipt);
     if (problem) {
       toast({ title: 'Please check the receipt', description: problem, variant: 'destructive' });

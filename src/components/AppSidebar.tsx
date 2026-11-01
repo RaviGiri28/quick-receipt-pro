@@ -1,5 +1,5 @@
 import {
-  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, HelpCircle, Newspaper, Bell, PenSquare, Megaphone, Users,
+  Home, FilePlus, History, Settings, User, Info, LifeBuoy, LogOut, Bookmark, HelpCircle, Newspaper, Bell, PenSquare, Megaphone, Users, Ticket,
   type LucideIcon,
 } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -45,6 +45,7 @@ const activeClass =
 
 const adminNav: NavItem[] = [
   { title: 'Users', url: '/admin/users', icon: Users },
+  { title: 'Coupons', url: '/admin/coupons', icon: Ticket },
   { title: 'Publish Blog', url: '/admin/blog', icon: PenSquare },
   { title: 'Announcements', url: '/admin/announcements', icon: Megaphone },
 ];

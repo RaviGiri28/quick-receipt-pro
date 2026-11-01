@@ -4,6 +4,10 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { TermsGate } from '@/components/TermsGate';
 import { DeactivatedNotice } from '@/components/DeactivatedNotice';
+import { PlanStatus } from '@/components/subscription/PlanStatus';
+import { UpgradeDialog } from '@/components/subscription/UpgradeDialog';
+import { CouponOfferDialog } from '@/components/subscription/CouponOfferDialog';
+import { SubscriptionNotice } from '@/components/subscription/SubscriptionNotice';
 import { PasscodeLock } from '@/components/PasscodeLock';
 import { isUnlocked } from '@/lib/appLock';
 import { Logo } from '@/components/brand/Logo';
@@ -152,20 +156,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <HeaderSearch />
             </div>
             <div className="flex items-center gap-2">
+              <div className="hidden sm:block"><PlanStatus /></div>
               <ThemeToggle />
               <NotificationBell />
               <UserMenu />
             </div>
           </header>
+          {/* Phones: no room in the header, so the countdown and Upgrade get their own strip. */}
+          <div className="no-print border-b border-border/60 bg-background/75 px-4 py-2 backdrop-blur-xl empty:hidden sm:hidden">
+            <PlanStatus compact />
+          </div>
           <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
             <div className="mx-auto w-full max-w-[1400px]">
               <DeactivatedNotice />
+              <SubscriptionNotice />
               {children}
             </div>
           </div>
         </main>
       </div>
       <TermsGate />
+      <UpgradeDialog />
+      <CouponOfferDialog />
     </SidebarProvider>
   );
 }

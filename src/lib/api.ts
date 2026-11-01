@@ -1,4 +1,4 @@
-import { CustomFieldDef, ReceiptData, UserProfile } from '@/types/receipt';
+import { CustomFieldDef, ReceiptData, Subscription, SubscriptionStatus, UserProfile } from '@/types/receipt';
 
 // Empty in dev: Vite proxies /api to the backend (see vite.config.ts).
 export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
@@ -56,8 +56,16 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 // Called when the server refuses a request because an admin deactivated the account,
 // so the app can reload the profile and show the deactivation notice.
 let onDeactivated: (() => void) | null = null;
+export const ACCOUNT_DEACTIVATED_EVENT = 'qr:account-deactivated';
 export function setDeactivatedHandler(handler: (() => void) | null) {
   onDeactivated = handler;
+}
+
+// Called when the server refuses a receipt because the trial or plan has ended,
+// so the app can reload the subscription and show the upgrade screen.
+let onSubscriptionRequired: (() => void) | null = null;
+export function setSubscriptionRequiredHandler(handler: (() => void) | null) {
+  onSubscriptionRequired = handler;
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -83,7 +91,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && token) onUnauthorized?.();
-    if (res.status === 403 && data?.code === 'ACCOUNT_DEACTIVATED') onDeactivated?.();
+    if (res.status === 403 && data?.code === 'ACCOUNT_DEACTIVATED') {
+      onDeactivated?.();
+      // Shows the deactivated-account popup again, even if it was already closed.
+      window.dispatchEvent(new Event(ACCOUNT_DEACTIVATED_EVENT));
+    }
+    if (res.status === 402 && data?.code === 'SUBSCRIPTION_REQUIRED') onSubscriptionRequired?.();
     throw new ApiError(data?.message || `Request failed (${res.status})`, res.status, data);
   }
   return data as T;
@@ -139,6 +152,30 @@ interface ApiUser {
   terms_current?: string;
   has_passcode?: boolean;
   deactivated_at?: string | null;
+  subscription?: ApiSubscription;
+}
+
+export interface ApiSubscription {
+  status: SubscriptionStatus;
+  plan: 'trial' | 'paid' | null;
+  plan_id: string | null;
+  started_at: string | null;
+  expires_at: string | null;
+  can_create: boolean;
+}
+
+export function subscriptionFromApi(s?: ApiSubscription): Subscription {
+  // Endpoints that don't report it (login, profile update) leave the account usable;
+  // the server still enforces the plan.
+  if (!s) return { status: 'trial', plan: null, planId: null, startedAt: null, expiresAt: null, canCreate: true };
+  return {
+    status: s.status,
+    plan: s.plan,
+    planId: s.plan_id,
+    startedAt: s.started_at,
+    expiresAt: s.expires_at,
+    canCreate: s.can_create,
+  };
 }
 
 export const assetUrl = (path?: string | null) =>
@@ -162,6 +199,7 @@ export function userFromApi(u: ApiUser): UserProfile {
     termsAccepted: u.terms_current === undefined || u.terms_version === u.terms_current,
     hasPasscode: !!u.has_passcode,
     deactivatedAt: u.deactivated_at ?? null,
+    subscription: subscriptionFromApi(u.subscription),
   };
 }
 
@@ -175,6 +213,8 @@ export interface SignupData {
   businessPhone: string;
   logo?: File | null;
   acceptedTermsVersion: string;
+  // Optional: gives the coupon's trial days instead of the default free trial.
+  couponCode?: string;
 }
 
 export interface ProfileUpdate {
@@ -202,7 +242,9 @@ export const authApi = {
     if (data.logo) form.append('business_logo', data.logo);
     form.append('accept_terms', 'true');
     form.append('terms_version', data.acceptedTermsVersion);
-    return request<{ userId: number }>('POST', '/api/auth/register', form);
+    if (data.couponCode?.trim()) form.append('coupon_code', data.couponCode.trim());
+    // trial_days: the free trial that starts on the first login.
+    return request<{ userId: number; trial_days: number }>('POST', '/api/auth/register', form);
   },
 
   acceptTerms: (version: string) =>
@@ -259,6 +301,39 @@ export const authApi = {
   removePasscode: (password: string) => request<unknown>('DELETE', '/api/auth/passcode', { password }),
 
   verifyPasscode: (passcode: string) => request<unknown>('POST', '/api/auth/passcode/verify', { passcode }),
+};
+
+// ---------------------------------------------------------------------------
+// Subscription
+// ---------------------------------------------------------------------------
+
+export interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  days: number;
+  months: number;
+  best_value?: boolean;
+}
+
+export interface SubscriptionDetails {
+  subscription: Subscription;
+  plans: Plan[];
+  // Accounts that never had a trial: the coupon offered to them.
+  offer: { code: string; trial_days: number } | null;
+}
+
+export const subscriptionApi = {
+  get: async (): Promise<SubscriptionDetails> => {
+    const data = await request<{ subscription: ApiSubscription; plans: Plan[]; offer: SubscriptionDetails['offer'] }>(
+      'GET', '/api/subscription',
+    );
+    return { ...data, subscription: subscriptionFromApi(data.subscription) };
+  },
+  redeem: async (code: string) => {
+    const data = await request<{ message: string; subscription: ApiSubscription }>('POST', '/api/subscription/redeem', { code });
+    return { message: data.message, subscription: subscriptionFromApi(data.subscription) };
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -603,18 +678,64 @@ export interface AdminUser {
   deletion_requested_at: string | null;
   receipt_count: number;
   is_admin: boolean;
+  subscription: ApiSubscription;
+  // Signed up but never logged in: this many trial days start on the first login.
+  trial_days_pending: number | null;
 }
 
 export type AdminUserStatusFilter = 'all' | 'active' | 'deactivated';
+export type AdminPlanFilter = 'all' | 'trial' | 'paid' | 'expired' | 'none';
 
 export interface AdminUserList {
   users: AdminUser[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
-  stats: { total: number; active: number; deactivated: number; new_this_week: number };
+  stats: {
+    total: number; active: number; deactivated: number; new_this_week: number;
+    on_trial: number; paid: number; expired: number;
+  };
+  plans: Plan[];
+}
+
+export type AdminPlanAction =
+  | { action: 'grant_paid'; plan_id: string }
+  | { action: 'add_trial'; days: number }
+  | { action: 'expire' };
+
+export type CouponAudience = 'signup' | 'existing' | 'expired' | 'personal' | 'all';
+
+export interface Coupon {
+  id: number;
+  code: string;
+  trial_days: number;
+  audience: CouponAudience;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+  note: string | null;
+  created_at: string;
+  converted_count: number;
+  // Personal coupons: the one account that can use it, and whether it has.
+  user_id: number | null;
+  user_name: string | null;
+  user_email: string | null;
+  redeemed: boolean;
+}
+
+export interface CouponInput {
+  code: string;
+  trial_days: number;
+  audience: CouponAudience;
+  max_uses: number | null;
+  expires_at: string | null;
+  is_active: boolean;
+  note: string | null;
+  // Personal coupons only, when creating.
+  user_id?: number | null;
 }
 
 export const adminApi = {
-  listUsers: (params: { search?: string; status?: AdminUserStatusFilter; page?: number; limit?: number }) => {
+  listUsers: (params: { search?: string; status?: AdminUserStatusFilter; plan?: AdminPlanFilter; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== '') query.set(key, String(value));
@@ -623,6 +744,15 @@ export const adminApi = {
   },
   setUserDeactivated: async (id: number, deactivated: boolean) =>
     (await request<{ user: AdminUser }>('PUT', `/api/admin/users/${id}/status`, { deactivated })).user,
+  setUserPlan: (id: number, change: AdminPlanAction) =>
+    request<{ message: string; user: AdminUser }>('PUT', `/api/admin/users/${id}/plan`, change),
+
+  listCoupons: async () => (await request<{ coupons: Coupon[] }>('GET', '/api/admin/coupons')).coupons,
+  createCoupon: async (data: CouponInput) =>
+    (await request<{ coupon: Coupon }>('POST', '/api/admin/coupons', data)).coupon,
+  updateCoupon: async (id: number, data: CouponInput) =>
+    (await request<{ coupon: Coupon }>('PUT', `/api/admin/coupons/${id}`, data)).coupon,
+  deleteCoupon: (id: number) => request<unknown>('DELETE', `/api/admin/coupons/${id}`),
 
   listPosts: async () => (await request<{ posts: AdminBlogPost[] }>('GET', '/api/admin/blog')).posts,
   getPost: async (id: number) => (await request<{ post: AdminBlogPost }>('GET', `/api/admin/blog/${id}`)).post,

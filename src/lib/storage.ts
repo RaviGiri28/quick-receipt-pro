@@ -20,4 +20,11 @@ export function getSettings(): AppSettings {
 
 export function saveSettings(settings: AppSettings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  applyPrintAlign(settings);
+}
+
+// The print stylesheet (index.css) reads this to place a single receipt on the page,
+// so every page that prints follows the setting.
+export function applyPrintAlign(settings: AppSettings = getSettings()): void {
+  document.documentElement.dataset.printAlign = settings.printAlign || 'left';
 }

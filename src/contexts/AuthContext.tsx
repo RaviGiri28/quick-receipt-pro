@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CustomFieldDef, UserProfile } from '@/types/receipt';
+import { CustomFieldDef, Subscription, UserProfile } from '@/types/receipt';
 import {
   authApi, clearToken, getToken, setToken, setUnauthorizedHandler, setDeactivatedHandler,
   ApiError, ProfileUpdate, SignupData,
@@ -35,7 +35,7 @@ interface AuthContextType {
   sessionError: string | null;
   retrySession: () => void;
   login: (email: string, password: string, remember: boolean) => Promise<void>;
-  signup: (data: SignupData) => Promise<void>;
+  signup: (data: SignupData) => Promise<number>;
   logout: () => void;
   updateProfile: (data: ProfileUpdate) => Promise<void>;
   updateCustomFields: (defs: CustomFieldDef[]) => Promise<void>;
@@ -49,6 +49,8 @@ interface AuthContextType {
   removePasscode: (password: string) => Promise<void>;
   // Reloads the profile in the background (e.g. to pick up an admin deactivating the account).
   refreshProfile: () => void;
+  // Stores a subscription the server just returned (e.g. after applying a coupon).
+  setSubscription: (subscription: Subscription) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -102,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!getToken() || Date.now() - lastRefresh.current < 30_000) return;
     lastRefresh.current = Date.now();
     authApi.profile()
-      .then(profile => setUser(prev => (prev && prev.id === profile.id ? { ...prev, deactivatedAt: profile.deactivatedAt } : prev)))
+      .then(profile => setUser(prev => (prev && prev.id === profile.id
+        ? { ...prev, deactivatedAt: profile.deactivatedAt, subscription: profile.subscription }
+        : prev)))
       .catch(() => {});
   }, []);
 
@@ -158,10 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return deleteOn;
   };
 
-  const signup = async (data: SignupData) => {
-    // No auto-login: the signup page redirects to the login page.
-    await authApi.register(data);
-  };
+  // No auto-login: the signup page redirects to the login page. Returns the trial days.
+  const signup = async (data: SignupData) => (await authApi.register(data)).trial_days;
+
+  const setSubscription = useCallback((subscription: Subscription) => {
+    setUser(prev => (prev ? { ...prev, subscription } : prev));
+  }, []);
 
   const updateProfile = async (data: ProfileUpdate) => {
     setUser(await authApi.updateProfile(data));
@@ -185,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode, refreshProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode, refreshProfile, setSubscription }}>
       {children}
     </AuthContext.Provider>
   );
@@ -202,7 +208,7 @@ export function useAuth() {
       sessionError: null,
       retrySession: () => {},
       login: async () => {},
-      signup: async () => {},
+      signup: async () => 0,
       logout: () => {},
       updateProfile: async () => {},
       updateCustomFields: async () => {},
@@ -212,6 +218,7 @@ export function useAuth() {
       setPasscode: async () => {},
       removePasscode: async () => {},
       refreshProfile: () => {},
+      setSubscription: () => {},
     } as AuthContextType;
   }
   return ctx;

@@ -50,7 +50,24 @@ export interface UserProfile {
   hasPasscode: boolean;
   // When an admin deactivated the account (read-only: no new or edited receipts); null = active.
   deactivatedAt: string | null;
+  subscription: Subscription;
 }
+
+// 'admin': never needs a plan. 'none': never had a trial or plan (accounts made before
+// subscriptions). 'expired': the trial or plan has ended.
+export type SubscriptionStatus = 'admin' | 'trial' | 'paid' | 'expired' | 'none';
+
+export interface Subscription {
+  status: SubscriptionStatus;
+  plan: 'trial' | 'paid' | null;
+  planId: string | null;
+  startedAt: string | null;
+  expiresAt: string | null;
+  // Can create and edit receipts.
+  canCreate: boolean;
+}
+
+export type PrintAlign = 'left' | 'center' | 'right';
 
 export interface CustomFieldDef {
   id: string;
@@ -65,6 +82,8 @@ export interface AppSettings {
   primaryColor: string;
   // Last choice of the account-number eye toggle on Create Receipt; masked when unset.
   maskAccountNumber?: boolean;
+  // Where a single (not dual) receipt sits on the printed page; left when unset.
+  printAlign?: PrintAlign;
   // Legacy: custom field definitions used to live here (per device). They now belong to
   // the account (UserProfile.customFields); AuthContext uploads any left here once.
   customFields?: CustomFieldDef[];

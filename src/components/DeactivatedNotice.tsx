@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/hooks/use-notifications';
+import { ACCOUNT_DEACTIVATED_EVENT } from '@/lib/api';
 
 // The popup is shown once per tab session for each deactivation.
 const seenKey = (userId: number) => `qr_deactivated_seen_${userId}`;
@@ -39,6 +40,13 @@ export function DeactivatedNotice() {
   useEffect(() => {
     if (unread !== undefined) refreshProfile();
   }, [unread, refreshProfile]);
+
+  // The server refused something because the account is deactivated: show the popup again.
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener(ACCOUNT_DEACTIVATED_EVENT, show);
+    return () => window.removeEventListener(ACCOUNT_DEACTIVATED_EVENT, show);
+  }, []);
 
   useEffect(() => {
     if (user && deactivatedAt && !wasSeen(user.id, deactivatedAt)) setOpen(true);

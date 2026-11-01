@@ -38,13 +38,6 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
         ref={ref}
         className={`receipt-card paper-edge-y relative overflow-hidden bg-white text-slate-900 ${compact ? 'px-3 py-4' : 'px-5 py-6'} max-w-md mx-auto ${className}`}
       >
-        {/* Watermark */}
-        {business.showWatermark && (
-          <div className="watermark" style={{ color: `hsl(${business.primaryColor})` }}>
-            Quick Receipt
-          </div>
-        )}
-
         {/* Logo */}
         {business.showLogo && business.logo && (
           <div className={`flex justify-center ${compact ? 'mb-0.5' : 'mb-1'}`}>
