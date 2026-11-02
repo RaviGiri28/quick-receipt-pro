@@ -24,6 +24,8 @@ interface SubscriptionContextType {
   closeOffer: () => void;
   // Applies a coupon code; resolves to the server's message.
   redeem: (code: string) => Promise<string>;
+  // A payment went through: shows the new plan right away.
+  paymentDone: (subscription: Subscription) => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -133,6 +135,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return result.message;
   }, [queryClient, setSubscription]);
 
+  const paymentDone = useCallback((next: Subscription) => {
+    setSubscription(next);
+    setExpiredAt(0);
+    queryClient.invalidateQueries({ queryKey: ['subscription'] });
+  }, [queryClient, setSubscription]);
+
   const value: SubscriptionContextType = {
     deactivated,
     subscription,
@@ -146,6 +154,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     openOffer: useCallback(() => { setPaywallOpen(false); setOfferOpen(true); }, []),
     closeOffer: useCallback(() => setOfferOpen(false), []),
     redeem,
+    paymentDone,
   };
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;

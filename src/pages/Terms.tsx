@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LegalDocument, type LegalSection } from '@/components/LegalDocument';
-import { DELETION_GRACE_DAYS, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY } from '@/lib/legal';
+import { DELETION_GRACE_DAYS, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY, LEGAL_OPERATOR } from '@/lib/legal';
 
 const mail = <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>;
 
@@ -92,12 +92,26 @@ const sections: LegalSection[] = [
   },
   {
     id: 'fees',
-    title: 'Fees',
+    title: 'Plans, payments and refunds',
     body: (
-      <p>
-        The service is currently free. If we introduce paid features, we will tell you in advance, and you will not be
-        charged unless you choose to use them.
-      </p>
+      <>
+        <p>
+          Creating receipts requires an active free trial or paid plan. New accounts get a free trial. Our plans and
+          prices are shown on our website and in the app, in Indian rupees and including all taxes.
+        </p>
+        <p>
+          Each plan is a one-time purchase for a fixed period and does not renew automatically. When your trial or plan
+          ends, you can still log in and view or download your past receipts, but you cannot create new receipts until
+          you buy a plan. Any days left on your current plan are added to a new plan.
+        </p>
+        <p>
+          Payments are processed by Razorpay. We do not receive or store your card details, UPI details or bank login.
+        </p>
+        <p>
+          Refunds and cancellation are covered by our <Link to="/refund-policy">Refund &amp; Cancellation Policy</Link>.
+          We may change our prices, but this does not affect a plan you have already bought.
+        </p>
+      </>
     ),
   },
   {
@@ -204,7 +218,7 @@ const sections: LegalSection[] = [
   {
     id: 'contact',
     title: 'Contact',
-    body: <p>Questions or complaints about these terms: {mail}.</p>,
+    body: <p>{LEGAL_ENTITY} is operated by {LEGAL_OPERATOR}, {LEGAL_COUNTRY}. Questions or complaints about these terms: {mail}.</p>,
   },
 ];
 
@@ -214,7 +228,7 @@ export default function Terms() {
       title="Terms & Conditions"
       intro={
         <p>
-          These terms are an agreement between you and {LEGAL_ENTITY}. They explain how you may use the service and
+          These terms are an agreement between you and {LEGAL_OPERATOR}, who operates {LEGAL_ENTITY} from {LEGAL_COUNTRY}. They explain how you may use the service and
           what each of us is responsible for. Please read them together with our <Link to="/privacy" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
         </p>
       }
@@ -223,7 +237,8 @@ export default function Terms() {
           <li>{LEGAL_ENTITY} is a receipt tool. It does not move money or verify transactions.</li>
           <li>You are responsible for the details you enter and for having your customers' permission to use them.</li>
           <li>Never create fake receipts or use the service for anything illegal.</li>
-          <li>The service is free today; you can delete your account at any time.</li>
+          <li>Creating receipts needs a free trial or paid plan. Plans do not renew automatically.</li>
+          <li>You can delete your account at any time. Refunds follow our <Link to="/refund-policy" className="font-medium text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.</li>
         </ul>
       }
       sections={sections}

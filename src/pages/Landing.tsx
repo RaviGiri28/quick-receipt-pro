@@ -6,6 +6,7 @@ import { PublicNav } from '@/components/PublicNav';
 import { PrinterHero } from '@/components/PrinterHero';
 import { SiteFooter } from '@/components/SiteFooter';
 import { ContactSection } from '@/components/ContactSection';
+import { PricingSection } from '@/components/PricingSection';
 import {
   Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck,
 } from 'lucide-react';
@@ -174,6 +175,14 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-5xl">
+          <SectionTitle lead="Simple" accent="Pricing" sub="Try it free, then pick the plan that suits your shop" />
+          <PricingSection />
         </div>
       </section>
 

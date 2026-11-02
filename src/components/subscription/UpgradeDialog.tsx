@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
   BadgeCheck, Check, Crown, FileSpreadsheet, History, LifeBuoy, Printer, ShieldCheck, Sparkles, Ticket, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useToast } from '@/hooks/use-toast';
-import { errorMessage, type Plan } from '@/lib/api';
+import { errorMessage, subscriptionApi, type Plan } from '@/lib/api';
+import { loadRazorpay } from '@/lib/razorpay';
 import { cn, formatInr } from '@/lib/utils';
 
 const features = [
@@ -117,10 +119,11 @@ function CouponForm() {
 // Full-screen upgrade screen. It can be closed (X) to keep looking around; creating
 // receipts stays locked until there is a plan.
 export function UpgradeDialog() {
-  const { subscription, plans, paywallOpen, closePaywall } = useSubscription();
-  const navigate = useNavigate();
+  const { subscription, plans, paywallOpen, openPaywall, closePaywall, paymentDone } = useSubscription();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
+  const [paying, setPaying] = useState(false);
 
   const status = subscription?.status;
   const monthly = plans.find(p => p.months === 1);
@@ -137,15 +140,46 @@ export function UpgradeDialog() {
     ? 'You can still look around, view and download your past receipts. To create new receipts, pick a plan below.'
     : 'Keep creating receipts without interruption. Any days left on your current plan are added on top.';
 
-  // Online payment is not connected yet: the chosen plan is activated by the team.
-  // Replace this with the payment gateway checkout when it is added.
-  const startCheckout = (plan: Plan) => setCheckoutPlan(plan);
+  const startCheckout = async (plan: Plan) => {
+    setPaying(true);
+    try {
+      const order = await subscriptionApi.createOrder(plan.id);
+      await loadRazorpay();
+      if (!window.Razorpay) throw new Error('Could not load the payment page. Please try again.');
+      // Must close first: this full-screen dialog blocks clicks on Razorpay's popup.
+      closePaywall();
+      new window.Razorpay({
+        key: order.key_id,
+        order_id: order.order_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Quick Receipt',
+        description: `${plan.name} plan`,
+        prefill: { name: user?.name, email: user?.email, contact: user?.phone },
+        handler: async (response) => {
+          try {
+            const result = await subscriptionApi.verifyPayment(response);
+            paymentDone(result.subscription);
+            toast({ title: '🎉 Payment successful', description: `Your ${plan.name} plan is active.` });
+          } catch {
+            toast({
+              title: 'Payment received, but the plan was not activated',
+              description: `Please contact support with payment ID ${response.razorpay_payment_id}.`,
+              variant: 'destructive',
+            });
+          }
+        },
+        modal: { ondismiss: openPaywall },
+      }).open();
+    } catch (err) {
+      toast({ title: 'Could not start the payment', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const onOpenChange = (open: boolean) => {
-    if (!open) {
-      closePaywall();
-      setCheckoutPlan(null);
-    }
+    if (!open) closePaywall();
   };
 
   return (
@@ -184,7 +218,7 @@ export function UpgradeDialog() {
                     plan={plan}
                     monthly={monthly}
                     selected={selected?.id === plan.id}
-                    onSelect={() => { setSelectedId(plan.id); setCheckoutPlan(null); }}
+                    onSelect={() => setSelectedId(plan.id)}
                   />
                 ))}
               </div>
@@ -192,30 +226,13 @@ export function UpgradeDialog() {
 
             {selected && (
               <div className="mx-auto mt-6 max-w-md">
-                <Button className="btn-glow h-12 w-full rounded-full text-base" onClick={() => startCheckout(selected)}>
-                  <Sparkles /> Continue with {selected.name} · {formatInr(selected.price)}
+                <Button className="btn-glow h-12 w-full rounded-full text-base" disabled={paying} onClick={() => startCheckout(selected)}>
+                  <Sparkles /> {paying ? 'Opening payment…' : `Continue with ${selected.name} · ${formatInr(selected.price)}`}
                 </Button>
-                <p className="mt-2 text-center text-xs text-muted-foreground">Prices include all taxes. No auto-renewal.</p>
-              </div>
-            )}
-
-            {checkoutPlan && (
-              <div className="mx-auto mt-6 max-w-xl animate-fade-in-up rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 text-center">
-                <p className="font-bold text-navy">Online payment is coming soon</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  To activate the <strong>{checkoutPlan.name}</strong> plan ({formatInr(checkoutPlan.price)}) right now, message our
-                  support team and we will switch it on for your account.
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Prices include all taxes. No auto-renewal.{' '}
+                  <Link to="/refund-policy" target="_blank" className="underline hover:text-primary">Refund policy</Link>
                 </p>
-                <Button
-                  className="mt-4"
-                  onClick={() => {
-                    closePaywall();
-                    setCheckoutPlan(null);
-                    navigate('/support');
-                  }}
-                >
-                  <LifeBuoy /> Contact support to activate
-                </Button>
               </div>
             )}
 

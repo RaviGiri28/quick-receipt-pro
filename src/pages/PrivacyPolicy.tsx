@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { LegalDocument, type LegalSection } from '@/components/LegalDocument';
 import {
-  DELETION_GRACE_DAYS, INACTIVITY_NOTICE_DAYS, INACTIVITY_YEARS, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY,
+  DELETION_GRACE_DAYS, INACTIVITY_NOTICE_DAYS, INACTIVITY_YEARS, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY, LEGAL_OPERATOR,
 } from '@/lib/legal';
 
 const mail = <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>;
@@ -17,7 +17,7 @@ const sections: LegalSection[] = [
       <>
         <p>
           {LEGAL_ENTITY} ("we", "us") provides an online tool that lets shops and money transfer retailers
-          ("you") create, save and print transaction receipts. We operate from {LEGAL_COUNTRY}.
+          ("you") create, save and print transaction receipts. {LEGAL_ENTITY} is operated by {LEGAL_OPERATOR} from {LEGAL_COUNTRY}.
         </p>
         <p>For any privacy question or request, write to {mail}.</p>
       </>
@@ -43,6 +43,11 @@ const sections: LegalSection[] = [
         <p>
           The Smart Paste feature reads text you paste only inside your browser to fill the form; only the
           receipt you save is sent to us.
+        </p>
+        <p>
+          <strong>Payment records</strong>, when you buy a plan: the plan, amount, date, and Razorpay's order and payment
+          IDs. Razorpay collects your payment details directly, so we do not receive or store your card details, UPI
+          details or bank login.
         </p>
         <p><strong>Support messages</strong>: the name, email address, subject and message you send us through the Support page.</p>
         <p>
@@ -117,6 +122,7 @@ const sections: LegalSection[] = [
           <li><strong>TiDB Cloud (PingCAP)</strong>: our database, which stores account, receipt and support data. It is located in Singapore.</li>
           <li><strong>Cloudinary</strong>: stores business logo images.</li>
           <li><strong>Google Analytics for Firebase</strong>: usage statistics, as described above.</li>
+          <li><strong>Razorpay</strong>: processes payments for paid plans. We share your name, email address and phone number with it to fill in the payment form.</li>
           <li><strong>Our email provider</strong>: delivers support messages and account emails.</li>
           <li><strong>Google Fonts</strong>: serves the fonts the app uses, so Google receives your IP address when the page loads.</li>
         </ul>
@@ -158,6 +164,10 @@ const sections: LegalSection[] = [
         <ul>
           <li><strong>While your account is active</strong>, we keep your account details and receipts so you can use them.</li>
           <li><strong>A receipt you delete</strong> is removed from our database immediately.</li>
+          <li>
+            <strong>Payment records</strong> are kept for accounting and legal purposes. When an account is erased, they
+            are no longer linked to it.
+          </li>
           <li>
             <strong>If you delete your account</strong>, you can restore it by logging in within {DELETION_GRACE_DAYS} days.
             After that, your account, business details, receipts and support messages are permanently erased.

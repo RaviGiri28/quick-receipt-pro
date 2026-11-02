@@ -324,6 +324,7 @@ export interface SubscriptionDetails {
 }
 
 export const subscriptionApi = {
+  publicPlans: () => request<{ plans: Plan[]; trial_days: number }>('GET', '/api/subscription/plans'),
   get: async (): Promise<SubscriptionDetails> => {
     const data = await request<{ subscription: ApiSubscription; plans: Plan[]; offer: SubscriptionDetails['offer'] }>(
       'GET', '/api/subscription',
@@ -332,6 +333,14 @@ export const subscriptionApi = {
   },
   redeem: async (code: string) => {
     const data = await request<{ message: string; subscription: ApiSubscription }>('POST', '/api/subscription/redeem', { code });
+    return { message: data.message, subscription: subscriptionFromApi(data.subscription) };
+  },
+  createOrder: (planId: string) =>
+    request<{ key_id: string; order_id: string; amount: number; currency: string }>(
+      'POST', '/api/subscription/order', { plan_id: planId },
+    ),
+  verifyPayment: async (body: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+    const data = await request<{ message: string; subscription: ApiSubscription }>('POST', '/api/subscription/verify', body);
     return { message: data.message, subscription: subscriptionFromApi(data.subscription) };
   },
 };

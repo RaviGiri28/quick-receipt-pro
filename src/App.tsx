@@ -28,6 +28,7 @@ import BlogPost from "./pages/BlogPost";
 import Notifications from "./pages/Notifications";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
+import RefundPolicy from "./pages/RefundPolicy";
 import AdminBlog from "./pages/admin/AdminBlog";
 import BlogEditor from "./pages/admin/BlogEditor";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
@@ -79,6 +80,7 @@ const App = () => (
               {/* Public for visitors, in-app for logged-in users. */}
               <Route path="/privacy" element={<PublicShell>{() => <PrivacyPolicy />}</PublicShell>} />
               <Route path="/terms" element={<PublicShell>{() => <Terms />}</PublicShell>} />
+              <Route path="/refund-policy" element={<PublicShell>{() => <RefundPolicy />}</PublicShell>} />
               <Route path="/blog" element={<BlogShell>{audience => <Blog audience={audience} />}</BlogShell>} />
               <Route path="/blog/:slug" element={<BlogShell>{audience => <BlogPost audience={audience} />}</BlogShell>} />
               <Route path="/admin/blog" element={<AppLayout><AdminRoute><AdminBlog /></AdminRoute></AppLayout>} />
