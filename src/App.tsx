@@ -34,6 +34,7 @@ import BlogEditor from "./pages/admin/BlogEditor";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminPlans from "./pages/admin/AdminPlans";
 import { BlogShell, PublicShell } from "@/components/BlogShell";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/admin/announcements" element={<AppLayout><AdminRoute><AdminAnnouncements /></AdminRoute></AppLayout>} />
               <Route path="/admin/users" element={<AppLayout><AdminRoute><AdminUsers /></AdminRoute></AppLayout>} />
               <Route path="/admin/coupons" element={<AppLayout><AdminRoute><AdminCoupons /></AdminRoute></AppLayout>} />
+              <Route path="/admin/plans" element={<AppLayout><AdminRoute><AdminPlans /></AdminRoute></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </TourProvider>

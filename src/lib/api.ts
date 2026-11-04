@@ -755,6 +755,12 @@ export const adminApi = {
     (await request<{ user: AdminUser }>('PUT', `/api/admin/users/${id}/status`, { deactivated })).user,
   setUserPlan: (id: number, change: AdminPlanAction) =>
     request<{ message: string; user: AdminUser }>('PUT', `/api/admin/users/${id}/plan`, change),
+  resetUserPassword: (id: number, password: string) =>
+    request<{ message: string }>('PUT', `/api/admin/users/${id}/password`, { password }),
+
+  listPlans: async () => (await request<{ plans: Plan[] }>('GET', '/api/admin/plans')).plans,
+  updatePlan: async (id: string, data: { name: string; price: number; days: number }) =>
+    (await request<{ plan: Plan }>('PUT', `/api/admin/plans/${id}`, data)).plan,
 
   listCoupons: async () => (await request<{ coupons: Coupon[] }>('GET', '/api/admin/coupons')).coupons,
   createCoupon: async (data: CouponInput) =>

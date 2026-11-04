@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock, Crown, Search, ShieldAlert, ShieldCheck, TimerOff, UserPlus, Users } from 'lucide-react';
+import { Check, Clock, Copy, Crown, KeyRound, Search, ShieldAlert, ShieldCheck, TimerOff, UserPlus, Users } from 'lucide-react';
 import {
   adminApi, assetUrl, errorMessage, type AdminPlanAction, type AdminPlanFilter, type AdminUser, type AdminUserStatusFilter, type Plan,
 } from '@/lib/api';
@@ -163,6 +163,86 @@ function PlanDialog({ user, plans, onClose }: { user: AdminUser | null; plans: P
   );
 }
 
+// No look-alike characters (0/O, 1/l/I), because the password is passed on to the user by hand.
+const generatePassword = () => {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  // 224 is a multiple of chars.length (56), so every character is equally likely.
+  const bytes = crypto.getRandomValues(new Uint8Array(32)).filter(b => b < 224).slice(0, 12);
+  return Array.from(bytes, b => chars[b % chars.length]).join('');
+};
+
+function ResetPasswordDialog({ user, onClose }: { user: AdminUser | null; onClose: () => void }) {
+  const { toast } = useToast();
+  const [password, setPassword] = useState(generatePassword);
+  const [copied, setCopied] = useState(false);
+
+  const reset = useMutation({
+    mutationFn: () => adminApi.resetUserPassword(user!.id, password),
+    onError: (err) => toast({ title: 'Could not reset the password', description: errorMessage(err), variant: 'destructive' }),
+  });
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopied(true);
+    } catch {
+      toast({ title: 'Could not copy', description: 'Please select the password and copy it yourself.', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <Dialog open={!!user} onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Reset password · {user?.name}</DialogTitle>
+          <DialogDescription>{user?.email}</DialogDescription>
+        </DialogHeader>
+
+        {reset.isSuccess ? (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Password reset. Share it with the user now.</p>
+            <div className="flex gap-2">
+              <Input readOnly value={password} className="font-mono" aria-label="New password" onFocus={e => e.target.select()} />
+              <Button type="button" variant="outline" onClick={copy}>
+                {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              It will not be shown again. Ask them to change it in their Profile after logging in.
+            </p>
+            <Button type="button" className="w-full" onClick={onClose}>Done</Button>
+          </div>
+        ) : (
+          <form className="space-y-3" onSubmit={e => { e.preventDefault(); reset.mutate(); }}>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-password">New password</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="new-password"
+                  value={password}
+                  minLength={6}
+                  maxLength={72}
+                  autoComplete="off"
+                  className="font-mono"
+                  onChange={e => setPassword(e.target.value)}
+                />
+                <Button type="button" variant="outline" onClick={() => setPassword(generatePassword())}>Generate</Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Their old password stops working and they are signed out on all devices. They get an email saying the
+              password was reset, but it does not include the new password.
+            </p>
+            <Button type="submit" className="w-full" disabled={password.length < 6 || password.length > 72 || reset.isPending}>
+              <KeyRound /> {reset.isPending ? 'Resetting…' : 'Reset password'}
+            </Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function StatusBadge({ user }: { user: AdminUser }) {
   const [label, className] = user.deletion_requested_at
     ? ['Deleted', 'bg-muted text-muted-foreground']
@@ -208,6 +288,7 @@ export default function AdminUsersPage() {
   const [status, setStatus] = useState<AdminUserStatusFilter>('all');
   const [plan, setPlan] = useState<AdminPlanFilter>('all');
   const [managing, setManaging] = useState<AdminUser | null>(null);
+  const [resetting, setResetting] = useState<AdminUser | null>(null);
   const [page, setPage] = useState(1);
   const [confirming, setConfirming] = useState<AdminUser | null>(null);
   const debouncedSearch = useDebounce(search.trim(), 350);
@@ -321,7 +402,7 @@ export default function AdminUsersPage() {
 
         {users.length > 0 && (
           <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[1100px] text-sm">
+            <table className="w-full min-w-[1220px] text-sm">
               <thead className="bg-accent/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">User</th>
@@ -331,6 +412,7 @@ export default function AdminUsersPage() {
                   <th className="px-4 py-3 text-right">Receipts</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-center">Password</th>
                   <th className="px-4 py-3 text-center">Deactivate</th>
                 </tr>
               </thead>
@@ -377,6 +459,18 @@ export default function AdminUsersPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2.5 text-xs"
+                          disabled={u.is_admin || !!u.deletion_requested_at}
+                          title={u.is_admin ? 'Admin passwords cannot be reset here' : undefined}
+                          onClick={() => setResetting(u)}
+                        >
+                          Reset
+                        </Button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <Switch
                           checked={!!u.deactivated_at}
                           onCheckedChange={v => onToggle(u, v)}
@@ -406,6 +500,7 @@ export default function AdminUsersPage() {
       </section>
 
       <PlanDialog key={managing?.id ?? 'none'} user={managing} plans={plans} onClose={() => setManaging(null)} />
+      <ResetPasswordDialog key={`reset-${resetting?.id ?? 'none'}`} user={resetting} onClose={() => setResetting(null)} />
 
       <AlertDialog open={!!confirming} onOpenChange={o => { if (!o) setConfirming(null); }}>
         <AlertDialogContent>
