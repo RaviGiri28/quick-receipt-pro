@@ -181,7 +181,7 @@ export default function SavedReceipts() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
-        <DialogContent className={`bg-gradient-to-b from-accent/60 to-card ${printDual ? 'max-w-3xl' : 'max-w-lg'}`}>
+        <DialogContent className={`print-static bg-gradient-to-b from-accent/60 to-card ${printDual ? 'max-w-3xl' : 'max-w-lg'}`}>
           <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0 pr-8">
             <DialogTitle>Receipt Preview</DialogTitle>
             {/* Only for receipts saved masked; reveals the number on screen only. */}

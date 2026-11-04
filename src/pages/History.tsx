@@ -227,7 +227,7 @@ export default function HistoryPage() {
 
       {/* Preview Dialog - consistent with SavedReceipts */}
       <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
-        <DialogContent className="max-w-lg bg-gradient-to-b from-accent/60 to-card">
+        <DialogContent className="print-static max-w-lg bg-gradient-to-b from-accent/60 to-card">
           <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0 pr-8">
             <DialogTitle>Receipt Preview</DialogTitle>
             {/* Only for receipts saved masked; reveals the number on screen only. */}

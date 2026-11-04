@@ -283,9 +283,12 @@
     visibility: visible;
   }
   .print-area {
+    /* Thermal printers can't print right up to the paper edge and @page margin is 0,
+       so keep the receipt clear of the edges or its frame and text get cut off. */
+    --print-gutter: 4mm;
     position: absolute;
-    top: 0;
-    left: 0;
+    top: var(--print-gutter);
+    left: var(--print-gutter);
     width: 80mm;
     max-width: 80mm;
     margin: 0;
@@ -316,7 +319,7 @@
   }
   html[data-print-align='right'] .print-area:not(:has(.grid-cols-2)) {
     left: auto;
-    right: 0;
+    right: var(--print-gutter);
   }
   .print-area .receipt-card {
     -webkit-mask: none !important;
@@ -392,7 +395,13 @@
   .no-print {
     display: none !important;
   }
-  /* Decorative wrappers around receipts must not become the print-area's containing block. */
+  /* An open dialog's scroll lock reserves scrollbar space on the body, which would shift
+     right-aligned receipts. */
+  html body[data-scroll-locked] {
+    margin: 0 !important;
+  }
+  /* Decorative wrappers and preview dialogs around receipts must not become the
+     print-area's containing block. */
   .print-static {
     position: static !important;
     transform: none !important;
@@ -401,6 +410,17 @@
     background: none !important;
     box-shadow: none !important;
     border: none !important;
+  }
+  /* Printing from a preview dialog: drop the page behind it and the dialog's own frame from
+     the layout, since hidden content still takes up space and would add extra pages. */
+  body:has(> [role='dialog'].print-static .print-area) > #root {
+    display: none !important;
+  }
+  [role='dialog'].print-static:has(.print-area) {
+    display: contents !important;
+  }
+  [role='dialog'].print-static:has(.print-area) > :not(.print-area) {
+    display: none !important;
   }
   @page {
     size: auto;
