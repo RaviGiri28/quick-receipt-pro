@@ -1,20 +1,23 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/brand/Logo';
-import { LEGAL_COUNTRY, LEGAL_OPERATOR } from '@/lib/legal';
+import { LEGAL_COUNTRY, LEGAL_ENTITY, LEGAL_OPERATOR } from '@/lib/legal';
 
 // Footer of the public site (landing, blog, legal pages).
 export function SiteFooter() {
   return (
     <footer className="border-t border-border/60 px-4 py-8 sm:px-6">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <Logo markClassName="h-8 w-8" textClassName="text-lg" />
         <nav aria-label="Legal" className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           <Link to="/privacy" className="hover:text-primary hover:underline">Privacy Policy</Link>
           <Link to="/terms" className="hover:text-primary hover:underline">Terms &amp; Conditions</Link>
           <Link to="/refund-policy" className="hover:text-primary hover:underline">Refund &amp; Cancellation</Link>
+          <Link to="/about" className="hover:text-primary hover:underline">About</Link>
           <Link to="/blog" className="hover:text-primary hover:underline">Blog</Link>
         </nav>
-        <p className="text-center sm:text-right">© {new Date().getFullYear()} Quick Receipt. Operated by {LEGAL_OPERATOR}, {LEGAL_COUNTRY}.</p>
+        </div>
+        <p className="border-t border-border/60 pt-4 text-center text-xs sm:text-sm">© {new Date().getFullYear()} {LEGAL_OPERATOR} ({LEGAL_ENTITY}). All rights reserved. · Udyam Registered MSME · {LEGAL_COUNTRY}</p>
       </div>
     </footer>
   );

@@ -8,7 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { ContactSection } from '@/components/ContactSection';
 import { PricingSection } from '@/components/PricingSection';
 import {
-  Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck,
+  Printer, History, FileSpreadsheet, Copy, Zap, ArrowRight, ShieldCheck, Clock, Users, Star, MonitorCheck, BadgeCheck,
 } from 'lucide-react';
 
 const features = [
@@ -35,9 +35,9 @@ const benefits = [
 ];
 
 const faqs = [
-  { q: 'Which printers does Quick Receipt support?', a: 'Receipts are laid out for 58mm and 80mm thermal printers, and print from any browser with your normal print dialog.' },
+  { q: 'Which printers does Quick Receipt Pro support?', a: 'Receipts are laid out for 58mm and 80mm thermal printers, and print from any browser with your normal print dialog.' },
   { q: 'Can I print a copy for the customer and one for my shop?', a: 'Yes. Turn on dual receipts while creating a receipt (or make it the default in Settings) and both copies print side by side.' },
-  { q: 'How does Smart Paste work?', a: 'Paste the raw transaction message you received and Quick Receipt detects the account number, name, IFSC, amount and other details for you.' },
+  { q: 'How does Smart Paste work?', a: 'Paste the raw transaction message you received and Quick Receipt Pro detects the account number, name, IFSC, amount and other details for you.' },
   { q: 'Can I add my shop logo and details?', a: 'Yes. Add your business name, address, phone and logo in your profile. You can also add your own custom fields in Settings.' },
   { q: 'Can I export my receipts?', a: 'Yes. Filter your history by date or status and export every matching receipt to an Excel file in one click.' },
 ];
@@ -86,7 +86,8 @@ export default function Landing() {
         <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-full bg-gradient-to-b from-accent/70 via-accent/30 to-transparent" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.15fr_1fr]">
           <div className="stagger space-y-6 text-center lg:text-left">
-            <div className="chip mx-auto w-fit text-primary lg:mx-0">
+            <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+            <div className="chip w-fit text-primary">
               <span className="flex h-4 w-6 flex-col overflow-hidden rounded-[3px] shadow-sm" aria-hidden>
                 <span className="flex-1 bg-[#FF9933]" />
                 <span className="relative flex-1 bg-white"><span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#000080]" /></span>
@@ -94,9 +95,14 @@ export default function Landing() {
               </span>
               Built for Indian Retailers
             </div>
+            {/* Registration only: no government logo or "certified/approved" wording. */}
+            <div className="chip w-fit text-primary">
+              <BadgeCheck className="h-4 w-4" /> Udyam Registered MSME
+            </div>
+            </div>
             <h1 className="text-4xl font-extrabold leading-[1.05] text-navy sm:text-5xl xl:text-6xl">
-              Quick Receipt Generator
-              <span className="mt-1 block text-gradient">for Mobile Retailers</span>
+              Quick Receipt Pro
+              <span className="mt-1 block text-gradient">Receipt Generator <br className="hidden sm:block" />for Mobile Retailers</span>
             </h1>
             <p className="mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
               Generate professional transaction receipts instantly. Paste details, auto-fill fields, print on thermal paper — all in seconds.
@@ -165,7 +171,7 @@ export default function Landing() {
       {/* Why choose */}
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <SectionTitle lead="Why Choose" accent="Quick Receipt?" sub="Made for busy counters and fast-moving queues" />
+          <SectionTitle lead="Why Choose" accent="Quick Receipt Pro?" sub="Made for busy counters and fast-moving queues" />
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {benefits.map((b, i) => (
               <div key={b.title} className="reveal card-soft card-hover group p-6 text-center" style={{ transitionDelay: `${i * 70}ms` }}>

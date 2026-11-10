@@ -7,7 +7,7 @@ export function useBusinessInfo(): BusinessInfo {
   const { user } = useAuth();
   const settings = getSettings();
   return {
-    name: user?.business.name || 'Quick Receipt',
+    name: user?.business.name || 'Quick Receipt Pro',
     logo: user?.business.logo || null,
     address: user?.business.address || '',
     phone: user?.business.phone || '',

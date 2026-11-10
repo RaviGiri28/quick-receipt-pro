@@ -121,7 +121,7 @@ export const ReceiptPreview = forwardRef<HTMLDivElement, ReceiptPreviewProps>(
 
         {/* Branding */}
         <div className="receipt-powered relative mt-1 text-right leading-tight">
-          <p className="text-[8px] text-slate-500">Powered by <span className="font-bold text-slate-700">Quick Receipt</span></p>
+          <p className="text-[8px] text-slate-500">Powered by <span className="font-bold text-slate-700">Quick Receipt Pro</span></p>
           <a
             href={PORTAL_URL}
             target="_blank"

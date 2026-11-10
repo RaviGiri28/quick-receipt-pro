@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FormSection } from '@/components/FormSection';
 import { LogoMark } from '@/components/brand/Logo';
 import {
-  Receipt, Shield, Printer, Globe, CheckCircle, Target, Heart, Eye, Sparkles, Users, ArrowRight,
+  Receipt, Shield, Printer, Globe, CheckCircle, Target, Heart, Eye, Sparkles, Users, ArrowRight, BadgeCheck,
 } from 'lucide-react';
 
 const keyFeatures = [
@@ -25,13 +25,13 @@ const sections = [
   },
   {
     icon: Shield,
-    title: 'Why Choose Quick Receipt',
-    content: 'Quick Receipt combines intelligent automation, beautiful design, and rock-solid reliability. Our smart parsing auto-fills transaction details, and our print engine delivers pixel-perfect A4 receipts every time.',
+    title: 'Why Choose Quick Receipt Pro',
+    content: 'Quick Receipt Pro combines intelligent automation, beautiful design, and rock-solid reliability. Our smart parsing auto-fills transaction details, and our print engine delivers pixel-perfect A4 receipts every time.',
   },
   {
     icon: Globe,
     title: 'Built for Indian Retailers',
-    content: 'Designed with INR formatting, Indian banking standards (IFSC, UPI, NEFT), and workflows tailored for money transfer businesses across India. From Tier-1 cities to small towns.',
+    content: 'Designed with INR formatting, Indian banking standards (IFSC, UPI, NEFT), and workflows tailored for money transfer businesses across India. From Tier-1 cities to small towns. Quick Receipt Pro is a Udyam Registered MSME — an Indian small business, building for Indian retailers.',
   },
   {
     icon: Heart,
@@ -50,7 +50,8 @@ const sections = [
   },
 ];
 
-export default function AboutPage() {
+// Public: visitors see it in the site layout, logged-in users inside the app (see App.tsx).
+export default function AboutPage({ loggedIn = true }: { loggedIn?: boolean }) {
   const navigate = useNavigate();
 
   return (
@@ -62,10 +63,14 @@ export default function AboutPage() {
         <div className="relative space-y-4">
           <LogoMark className="mx-auto h-16 w-16 animate-float" />
           <h1 className="text-3xl font-extrabold text-navy sm:text-4xl">
-            About Quick <span className="text-primary">Receipt</span>
+            About Quick <span className="text-primary">Receipt Pro</span>
           </h1>
+          {/* Registration only: no government logo or "certified/approved" wording. */}
+          <div className="chip mx-auto w-fit text-primary">
+            <BadgeCheck className="h-4 w-4" /> Udyam Registered MSME
+          </div>
           <p className="mx-auto max-w-2xl text-muted-foreground sm:text-lg">
-            Quick Receipt is a modern, professional receipt management platform designed specifically
+            Quick Receipt Pro is a modern, professional receipt management platform designed specifically
             for money transfer retailers across India. Generate, customize, print, and manage
             transaction receipts with ease.
           </p>
@@ -104,16 +109,16 @@ export default function AboutPage() {
             Start creating professional receipts for your money transfer business today.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={() => navigate('/create')} variant="secondary" size="lg">
-              <Receipt /> Create Your First Receipt <ArrowRight />
+            <Button onClick={() => navigate(loggedIn ? '/create' : '/signup')} variant="secondary" size="lg">
+              <Receipt /> {loggedIn ? 'Create Your First Receipt' : 'Get Started Free'} <ArrowRight />
             </Button>
             <Button
-              onClick={() => navigate('/support')}
+              onClick={() => navigate(loggedIn ? '/support' : '/landing#contact')}
               variant="outline"
               size="lg"
               className="border-white/40 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
             >
-              <Users /> Contact Support
+              <Users /> {loggedIn ? 'Contact Support' : 'Contact Us'}
             </Button>
           </div>
         </div>

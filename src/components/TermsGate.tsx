@@ -40,7 +40,7 @@ export function TermsGate() {
           <div className="icon-tile mb-2 h-12 w-12"><FileCheck2 className="h-6 w-6" /></div>
           <AlertDialogTitle>Please review our Terms and Privacy Policy</AlertDialogTitle>
           <AlertDialogDescription>
-            To keep using Quick Receipt, please read and accept our Terms &amp; Conditions and Privacy Policy. They
+            To keep using Quick Receipt Pro, please read and accept our Terms &amp; Conditions and Privacy Policy. They
             explain how your account and receipt data are stored and protected.
           </AlertDialogDescription>
         </AlertDialogHeader>

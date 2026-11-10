@@ -90,7 +90,7 @@ export interface AppSettings {
 }
 
 export const defaultBusinessInfo: BusinessInfo = {
-  name: 'Quick Receipt',
+  name: 'Quick Receipt Pro',
   logo: null,
   showLogo: true,
   showName: true,

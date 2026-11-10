@@ -38,14 +38,14 @@ export default function BlogPage({ audience }: { audience: BlogAudience }) {
           className="animate-fade-in-up"
           icon={Newspaper}
           title="Blog"
-          description="New features, updates and tips from the Quick Receipt team"
+          description="New features, updates and tips from the Quick Receipt Pro team"
           actions={user?.isAdmin && (
             <Button asChild><Link to="/admin/blog/new"><PenSquare /> New Post</Link></Button>
           )}
         />
       ) : (
         <div className="mx-auto max-w-2xl space-y-3 text-center animate-fade-in-up">
-          <span className="chip mx-auto"><Newspaper className="h-4 w-4 text-primary" /> Quick Receipt Blog</span>
+          <span className="chip mx-auto"><Newspaper className="h-4 w-4 text-primary" /> Quick Receipt Pro Blog</span>
           <h1 className="text-4xl font-extrabold text-navy sm:text-5xl">
             What's <span className="text-gradient">new</span>
           </h1>

@@ -125,7 +125,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <WifiOff className="h-8 w-8" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-navy">Can't connect to Quick Receipt</h1>
+          <h1 className="text-lg font-bold text-navy">Can't connect to Quick Receipt Pro</h1>
           <p className="mt-1 text-sm text-muted-foreground">{sessionError}</p>
         </div>
         <div className="flex gap-3">

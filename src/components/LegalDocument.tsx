@@ -16,8 +16,8 @@ export function LegalDocument({ title, intro, summary, sections }: {
   sections: LegalSection[];
 }) {
   useEffect(() => {
-    document.title = `${title} | Quick Receipt`;
-    return () => { document.title = 'Quick Receipt'; };
+    document.title = `${title} | Quick Receipt Pro`;
+    return () => { document.title = 'Quick Receipt Pro'; };
   }, [title]);
 
   return (

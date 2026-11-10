@@ -86,7 +86,7 @@ export default function SignupPage() {
       trackEvent('sign_up', { method: 'email', coupon: !!form.couponCode.trim() });
       toast({
         title: '✅ Account created successfully',
-        description: `Please login to enter Quick Receipt. Your ${trialDays}-day free trial starts when you log in.`,
+        description: `Please login to enter Quick Receipt Pro. Your ${trialDays}-day free trial starts when you log in.`,
       });
       navigate('/login');
     } catch (err) {
@@ -146,7 +146,7 @@ export default function SignupPage() {
           <div className="text-center">
             <LogoMark className="mx-auto h-16 w-16 animate-float" />
             <h2 className="mt-4 text-2xl font-extrabold text-navy sm:text-3xl">Create Account</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Get started with Quick Receipt</p>
+            <p className="mt-1 text-sm text-muted-foreground">Get started with Quick Receipt Pro</p>
           </div>
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <Field label="Full Name *" htmlFor="name">

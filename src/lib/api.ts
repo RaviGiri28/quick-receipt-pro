@@ -48,8 +48,10 @@ export function clearToken() {
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
-let onUnauthorized: (() => void) | null = null;
-export function setUnauthorizedHandler(handler: (() => void) | null) {
+// Receives the error body, e.g. { code: 'SESSION_REPLACED', device, signed_in_at } when the
+// account was signed in on another device (one device at a time).
+let onUnauthorized: ((data: Record<string, unknown> | null) => void) | null = null;
+export function setUnauthorizedHandler(handler: ((data: Record<string, unknown> | null) => void) | null) {
   onUnauthorized = handler;
 }
 
@@ -90,7 +92,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 401 && token) onUnauthorized?.();
+    // Only if the token is still the one sent: a newer login in this browser must not be undone.
+    if (res.status === 401 && token && getToken() === token) onUnauthorized?.(data);
     if (res.status === 403 && data?.code === 'ACCOUNT_DEACTIVATED') {
       onDeactivated?.();
       // Shows the deactivated-account popup again, even if it was already closed.
@@ -263,6 +266,9 @@ export const authApi = {
   // token: from the emailed link. Fails with code RESET_LINK_INVALID when used or expired.
   resetPassword: (token: string, password: string) =>
     request<{ message: string }>('POST', '/api/auth/reset-password', { token, password }),
+
+  // Throws (and signs out through the 401 handler) once another device has logged in.
+  checkSession: () => request<{ active: boolean }>('GET', '/api/auth/session'),
 
   profile: async () => userFromApi((await request<{ user: ApiUser }>('GET', '/api/auth/profile')).user),
 

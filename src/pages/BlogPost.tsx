@@ -37,8 +37,8 @@ export default function BlogPostPage({ audience }: { audience: BlogAudience }) {
   }, [viewedId, audience]);
 
   useEffect(() => {
-    if (post) document.title = `${post.title} · Quick Receipt Blog`;
-    return () => { document.title = 'Quick Receipt'; };
+    if (post) document.title = `${post.title} · Quick Receipt Pro Blog`;
+    return () => { document.title = 'Quick Receipt Pro'; };
   }, [post]);
 
   const copyLink = async () => {

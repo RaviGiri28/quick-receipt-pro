@@ -85,7 +85,7 @@ export function DeactivatedNotice() {
             </span>
             <DialogTitle className="text-xl">Your account has been deactivated</DialogTitle>
             <DialogDescription>
-              An administrator has deactivated your Quick Receipt account.
+              An administrator has deactivated your Quick Receipt Pro account.
             </DialogDescription>
           </DialogHeader>
           <ul className="space-y-2 rounded-xl bg-accent/50 p-4 text-sm">

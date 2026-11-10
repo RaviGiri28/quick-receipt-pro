@@ -135,7 +135,7 @@ export function UpgradeDialog() {
       ? 'Choose a plan to start creating receipts'
       : status === 'paid'
         ? 'Extend your plan'
-        : 'Upgrade to Quick Receipt Pro';
+        : 'Upgrade to a paid plan';
   const subtitle = status === 'expired' || status === 'none'
     ? 'You can still look around, view and download your past receipts. To create new receipts, pick a plan below.'
     : 'Keep creating receipts without interruption. Any days left on your current plan are added on top.';
@@ -153,7 +153,7 @@ export function UpgradeDialog() {
         order_id: order.order_id,
         amount: order.amount,
         currency: order.currency,
-        name: 'Quick Receipt',
+        name: 'Quick Receipt Pro',
         description: `${plan.name} plan`,
         prefill: { name: user?.name, email: user?.email, contact: user?.phone },
         handler: async (response) => {

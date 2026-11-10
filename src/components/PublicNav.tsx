@@ -13,6 +13,7 @@ const links = [
   { label: 'Pricing', href: '/landing#pricing' },
   { label: 'FAQ', href: '/landing#faq' },
   { label: 'Contact', href: '/landing#contact' },
+  { label: 'About', href: '/about' },
   { label: 'Blog', href: '/blog' },
 ];
 
@@ -47,8 +48,8 @@ export function PublicNav({ active }: { active?: string }) {
               key={l.label}
               href={l.href}
               className={cn(
-                'relative rounded-lg px-4 py-2 text-[0.95rem] font-medium text-navy/80 transition-colors hover:text-primary',
-                'after:absolute after:inset-x-4 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform after:duration-300 hover:after:scale-x-100',
+                'relative whitespace-nowrap rounded-lg px-3 py-2 text-[0.95rem] xl:px-4 font-medium text-navy/80 transition-colors hover:text-primary',
+                'after:absolute after:inset-x-3 xl:after:inset-x-4 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-primary after:transition-transform after:duration-300 hover:after:scale-x-100',
                 active === l.label && 'text-primary after:scale-x-100',
               )}
             >

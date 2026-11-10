@@ -36,7 +36,7 @@ export const tourSteps: TourStep[] = [
     id: 'welcome',
     route: '/',
     kind: 'welcome',
-    title: 'Welcome to Quick Receipt 👋',
+    title: 'Welcome to Quick Receipt Pro 👋',
     body: 'Take a one-minute tour. We will show you around and print your first receipt together using a demo transaction.',
   },
   {

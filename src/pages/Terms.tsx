@@ -130,7 +130,8 @@ const sections: LegalSection[] = [
     title: 'Intellectual property',
     body: (
       <p>
-        The service, including its software, design, name and logo, belongs to {LEGAL_ENTITY}. These terms give you a
+        The service, including its software, design, name and logo, belongs to {LEGAL_OPERATOR}, sole proprietor
+        of {LEGAL_ENTITY}. These terms give you a
         personal, non-transferable right to use the service; they do not give you any other rights in it. Your content
         remains yours.
       </p>

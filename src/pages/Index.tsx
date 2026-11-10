@@ -88,7 +88,7 @@ export default function Dashboard() {
       {/* Hero */}
       <section className="relative grid items-center gap-6 lg:grid-cols-[1.1fr_1fr]">
         <div className="stagger space-y-5">
-          <p className="font-semibold text-primary">Welcome to Quick Receipt</p>
+          <p className="font-semibold text-primary">Welcome to Quick Receipt Pro</p>
           <h1 className="text-4xl font-extrabold leading-[1.08] text-navy sm:text-5xl">
             Your Smart Receipt <span className="text-gradient">Generator</span>
           </h1>

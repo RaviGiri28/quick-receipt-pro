@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SessionReplacedNotice } from "@/components/SessionReplacedNotice";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/AppLayout";
@@ -74,7 +75,7 @@ const App = () => (
               <Route path="/saved" element={<AppLayout><SavedReceipts /></AppLayout>} />
               <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
               <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
-              <Route path="/about" element={<AppLayout><About /></AppLayout>} />
+              <Route path="/about" element={<PublicShell active="About">{loggedIn => <About loggedIn={loggedIn} />}</PublicShell>} />
               <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
               <Route path="/faq" element={<AppLayout><Faq /></AppLayout>} />
               <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
@@ -93,6 +94,7 @@ const App = () => (
               <Route path="/admin/plans" element={<AppLayout><AdminRoute><AdminPlans /></AdminRoute></AppLayout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <SessionReplacedNotice />
             </TourProvider>
             </SubscriptionProvider>
           </AuthProvider>

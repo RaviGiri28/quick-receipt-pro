@@ -33,7 +33,7 @@ export function CouponOfferDialog() {
     setBusy(true);
     try {
       await redeem(code);
-      toast({ title: `🎉 Your ${offer.trial_days}-day free trial has started`, description: 'Enjoy Quick Receipt! We have emailed you the details.' });
+      toast({ title: `🎉 Your ${offer.trial_days}-day free trial has started`, description: 'Enjoy Quick Receipt Pro! We have emailed you the details.' });
       setCode('');
       closeOffer();
     } catch (err) {
@@ -52,7 +52,7 @@ export function CouponOfferDialog() {
           </span>
           <DialogTitle className="text-2xl">A gift for you: {offer.trial_days} days free!</DialogTitle>
           <DialogDescription>
-            Quick Receipt now has paid plans. As a thank you for being with us, enter this code to get a
+            Quick Receipt Pro now has paid plans. As a thank you for being with us, enter this code to get a
             free {offer.trial_days}-day trial.
           </DialogDescription>
         </DialogHeader>

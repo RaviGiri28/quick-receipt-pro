@@ -95,8 +95,8 @@ export default function LoginPage() {
             <div className="pt-6">
               <p className="text-2xl font-semibold text-muted-foreground">Welcome to</p>
               <h1 className="text-5xl font-extrabold leading-[1.05] text-navy xl:text-6xl">
-                Quick Receipt
-                <span className="block text-gradient">Generator</span>
+                Quick Receipt Pro
+                <span className="block text-gradient">Receipt Generator</span>
               </h1>
             </div>
             <p className="max-w-md text-lg text-muted-foreground">
@@ -128,7 +128,7 @@ export default function LoginPage() {
             <div className="text-center">
               <LogoMark className="mx-auto h-20 w-20 animate-float" />
               <h2 className="mt-5 text-3xl font-extrabold text-navy">Welcome Back</h2>
-              <p className="mt-1.5 text-muted-foreground">Sign in to your Quick Receipt account</p>
+              <p className="mt-1.5 text-muted-foreground">Sign in to your Quick Receipt Pro account</p>
             </div>
             <form onSubmit={handleLogin} className="mt-8 space-y-5">
               <div className="space-y-2">

@@ -27,6 +27,16 @@ async function loadProfile(): Promise<UserProfile> {
   return profile;
 }
 
+// Why the user was signed out without asking for it, shown in a popup after logout.
+export interface LogoutNotice {
+  message: string;
+  device: string | null;
+  signedInAt: string | null;
+}
+
+// How often an open tab checks that no other device has taken over the account.
+const SESSION_CHECK_MS = 60_000;
+
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
@@ -51,6 +61,9 @@ interface AuthContextType {
   refreshProfile: () => void;
   // Stores a subscription the server just returned (e.g. after applying a coupon).
   setSubscription: (subscription: Subscription) => void;
+  // Set when this device was signed out because the account was used on another device.
+  logoutNotice: LogoutNotice | null;
+  dismissLogoutNotice: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -60,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [logoutNotice, setLogoutNotice] = useState<LogoutNotice | null>(null);
 
   const logout = useCallback(() => {
     clearToken();
@@ -69,11 +83,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
   }, [queryClient]);
 
-  // Expired or revoked token on any request -> back to logged-out state.
+  // Expired or revoked token on any request -> back to logged-out state. If another device
+  // logged in, say so in a popup.
   useEffect(() => {
-    setUnauthorizedHandler(logout);
+    setUnauthorizedHandler((data) => {
+      if (data?.code === 'SESSION_REPLACED') {
+        setLogoutNotice({
+          message: typeof data.message === 'string' ? data.message : 'Your account was signed in on another device.',
+          device: typeof data.device === 'string' ? data.device : null,
+          signedInAt: typeof data.signed_in_at === 'string' ? data.signed_in_at : null,
+        });
+      }
+      logout();
+    });
     return () => setUnauthorizedHandler(null);
   }, [logout]);
+
+  // An idle tab makes no requests, so check now and then (while visible) that this device
+  // is still the signed-in one; the 401 handler above signs it out if not.
+  const signedIn = !!user;
+  useEffect(() => {
+    if (!signedIn) return;
+    const check = () => {
+      if (document.visibilityState === 'visible' && getToken()) authApi.checkSession().catch(() => {});
+    };
+    const timer = window.setInterval(check, SESSION_CHECK_MS);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [signedIn]);
 
   // Restore the session from a saved token. Only an auth failure ends the session;
   // a server restart or network blip must not log the user out.
@@ -126,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshProfile]);
 
   const startSession = async (token: string, remember: boolean) => {
+    setLogoutNotice(null);
     setToken(token, remember);
     setSessionError(null);
     queryClient.clear();
@@ -191,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode, refreshProfile, setSubscription }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionError, retrySession: restoreSession, login, signup, logout, updateProfile, updateCustomFields, acceptTerms, restoreAccount, deleteAccount, setPasscode, removePasscode, refreshProfile, setSubscription, logoutNotice, dismissLogoutNotice: () => setLogoutNotice(null) }}>
       {children}
     </AuthContext.Provider>
   );
@@ -219,6 +260,8 @@ export function useAuth() {
       removePasscode: async () => {},
       refreshProfile: () => {},
       setSubscription: () => {},
+      logoutNotice: null,
+      dismissLogoutNotice: () => {},
     } as AuthContextType;
   }
   return ctx;
