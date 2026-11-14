@@ -17,7 +17,7 @@ const sections: LegalSection[] = [
       <>
         <p>
           {LEGAL_ENTITY} ("we", "us") provides an online tool that lets shops and money transfer retailers
-          ("you") create, save and print transaction receipts. {LEGAL_ENTITY} is operated by {LEGAL_OPERATOR} from {LEGAL_COUNTRY}.
+          ("you") create, save and print transaction receipts. {LEGAL_ENTITY} is operated from {LEGAL_COUNTRY}.
         </p>
         <p>For any privacy question or request, write to {mail}.</p>
       </>

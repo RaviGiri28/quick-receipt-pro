@@ -17,7 +17,7 @@ export function SiteFooter() {
           <Link to="/blog" className="hover:text-primary hover:underline">Blog</Link>
         </nav>
         </div>
-        <p className="border-t border-border/60 pt-4 text-center text-xs sm:text-sm">© {new Date().getFullYear()} {LEGAL_OPERATOR} ({LEGAL_ENTITY}). All rights reserved. · Udyam Registered MSME · {LEGAL_COUNTRY}</p>
+        <p className="border-t border-border/60 pt-4 text-center text-xs sm:text-sm">© {new Date().getFullYear()} ({LEGAL_ENTITY}). All rights reserved. · Udyam Registered MSME · {LEGAL_COUNTRY}</p>
       </div>
     </footer>
   );
